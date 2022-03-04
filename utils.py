@@ -776,6 +776,68 @@ def diff_dir(dir_path1, dir_path2, output_path, ignore_all_space=True, ignore_bl
     return
 
 
+# parse the condition of each tts in formatted tpl
+def get_indent_level(s, indent=4):
+    """
+    get indent level of input string s
+    :param s: input string
+    :param indent: whitespace num of one level, default 4
+    :return:
+    """
+    lspace_num = len(s) - len(s.lstrip())
+
+    return lspace_num // indent
+
+
+def update_condition(line, condition_stk):
+    """
+    update condition stack
+    :param line: input statement
+    :param condition_stk: list, condition stack
+    :return:
+    """
+    if_ptn = "^ *if *\((.*)\) *\{? *$"
+    elif_ptn = "^ *}? *elif *\((.*)\) *\{? *$"
+    else_ptn = "^ *}? *else *{ *$"
+
+    level = get_indent_level(line, indent=4)
+    if re.fullmatch(pattern=if_ptn, string=line):
+        while len(condition_stk) > level:
+            condition_stk.pop()
+        if_cond = re.findall(if_ptn, line)[0]
+        condition_stk.append([("if", if_cond)])
+    elif re.fullmatch(pattern=elif_ptn, string=line):
+        elif_cond = re.findall(elif_ptn, line)[0]
+        while len(condition_stk) > level + 1:
+            condition_stk.pop()
+        condition_stk[-1].append(("elif", elif_cond))
+    elif re.fullmatch(pattern=else_ptn, string=line):
+        else_cond = []
+        while len(condition_stk) > level + 1:
+            condition_stk.pop()
+        for item in condition_stk[-1]:
+            else_cond.append("not {}".format(item[1]))
+        condition_stk[-1].append(("else", " and ".join(else_cond)))
+    else:
+        pass
+
+
+def parse_code_condition(format_codes):
+    """
+    parse formatted codes, and get the condition of each tts statement
+    :param format_codes: the formatted codes to be parsed
+    """
+    condition_stk = []
+    tts_ptn = "^ *(tts\(.*\));?$"
+    codes = format_codes.split("\n")
+    for line in codes:
+        update_condition(line, condition_stk)
+        if line.strip().startswith("tts("):
+            tts = re.findall(pattern=tts_ptn, string=line)[0]
+            condition = " and ".join([item[-1][1] for item in condition_stk])
+            print("tts: {}, condition: {}".format(tts, condition))
+
+
 def test():
     # test_load_from_jsonl()  # test pass
     # test_save_to_jsonl()    # test pass
