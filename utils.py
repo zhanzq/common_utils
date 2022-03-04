@@ -16,8 +16,10 @@ import time
 from functools import wraps
 
 import inspect
-
 import hashlib
+
+import traceback
+import subprocess
 
 
 def gen_id(string, len_id=8):
@@ -401,8 +403,27 @@ def test_LCS():
         print("s = {}, t = {}, LCS = {}".format(s, t, LCS(s, t)))
 
 
-# all methods in js function <---> json object
+# 获取antlr中所有可能的预定义方法
+def get_candidate_functions(code):
+    if not code:
+        return set()
+    function_ptn = "(\w+)\("
+    return set(re.findall(function_ptn, code))
 
+
+def get_all_pre_defined_functions(tpl_xlsx_path):
+    json_dct = load_jsons_from_xlsx(tpl_xlsx_path)
+    st = set()
+    for car_type, json_lst in json_dct.items():
+        for item in json_lst:
+            tmp = get_candidate_functions(item["antlr"])
+            st = st.union(tmp)
+
+    for key in st:
+        print("\"function {}() ".format(key) + "{ }\",")
+
+
+# all methods in js function <---> json object
 def get_pre_defined_function():
     function_lst = [
         "function data(key) { }",
@@ -697,6 +718,62 @@ def check_convert_result_between_antlr_and_js(original_tpl_xlsx_path, convert_tp
             print("{:03d}: intent: {}, branch: {}".format(i + 1, pr[0], pr[1]))
 
     return diff_info, original_tpl_items, convert_tpl_items
+
+
+# 对比两个目录下所有的同名文件的差异
+def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, ignore_RE=None):
+    """
+    compare two files use diff tool
+    :param path1: the first file to compare
+    :param path2: the second file to compare
+    :param ignore_all_space: default True, ignore all whitespace, \t, \r, \n, \v, ' '
+    :param ignore_blank_lines: default True, ignore blank lines
+    :param ignore_RE: defaut None, otherwise, skip the lines matched ignore_RE
+    :return: list, the compared result
+    """
+    output_lines = []
+    # -T: prepending a tab, -U0: unified context = 0 lines, -I re: use regex,
+    # -w: ignore all space, -B: ignore blank lines
+    whitespace_mark = " -w" if ignore_all_space else ""
+    blank_line_mark = " -B" if ignore_blank_lines else ""
+    re_exp = ' -I "{}"'.format(ignore_RE) if ignore_RE else ""
+    cmd = "diff -dTU0{}{}{} {} {}".format(whitespace_mark, blank_line_mark, re_exp, path1, path2)
+    file_name = path1.split("/")[-1]
+    output_lines.append(format_string("diff {}".format(file_name)))
+    output_lines.append(subprocess.getoutput(cmd))
+
+    return output_lines
+
+
+def diff_dir(dir_path1, dir_path2, output_path, ignore_all_space=True, ignore_blank_lines=True, ignore_RE=None):
+    """
+    compare two dirs use diff tool
+    :param dir_path1: the first dir to compare
+    :param dir_path2: the second dir to compare
+    :param output_path: the output path to store compared result
+    :param ignore_all_space: default True, ignore all whitespace, \t, \r, \n, \v, ' '
+    :param ignore_blank_lines: default True, ignore blank lines
+    :param ignore_RE: defaut None, otherwise, skip the lines matched ignore_RE
+    :return:
+    """
+    output_lines = []
+    assert type(dir_path1) == type(dir_path2), "the compared files must both be dir or file"
+    if os.path.isdir(dir_path1):
+        file_lst1 = os.listdir(dir_path1)
+        file_lst2 = os.listdir(dir_path2)
+        for file_name in file_lst1:
+            if file_name in file_lst2:
+                path1 = os.path.join(dir_path1, file_name)
+                path2 = os.path.join(dir_path2, file_name)
+                output_lines.extend(diff_file(path1, path2, ignore_all_space, ignore_blank_lines, ignore_RE))
+    else:
+        output_lines = diff_file(dir_path1, dir_path2, ignore_all_space, ignore_blank_lines, ignore_RE)
+    diff_info = "\n".join(output_lines)
+
+    with open(output_path, "w") as writer:
+        writer.write(diff_info)
+
+    return
 
 
 def test():
