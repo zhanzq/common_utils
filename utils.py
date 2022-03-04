@@ -128,7 +128,7 @@ def save_to_tsv(json_lst: list, tsv_path: str):
 def load_from_tsv(tsv_path: str):
     """
     load json list from file, each line contains a dumped json object
-    :param jsonl_path: type: str, file path storing json objects, usually endswith ".tsv"
+    :param tsv_path: type: str, file path storing json objects, usually endswith ".tsv"
     :return: json object list
     """
     json_lst = []
@@ -171,18 +171,17 @@ def save_jsons_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title", o
         sheet.cell(row=1, column=j + 1).value = col_name
 
     # write json obj
-    col_sz, i = len(col_name_lst), 0
-    for obj in json_lst:
+    col_sz = len(col_name_lst)
+    for i, obj in enumerate(json_lst):
         for j in range(col_sz):
-            val = json_lst[i].get(col_name_lst[j])
+            val = obj.get(col_name_lst[j])
             if val is None:
                 val = ""
             sheet.cell(row=i + 2, column=j + 1).value = str(val)
-        i += 1
 
 
 @time_cost
-def save_jsons_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name="Title", overwrite=True):
+def save_jsons_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str="Title", overwrite=True):
     """
     write json list into xlsx file, treate keys as the column names
     :param json_lst: data to store with json format
@@ -366,7 +365,7 @@ def format_string(s, length=100):
     return res
 
 
-def LCS(s, t):
+def lcs(s, t):
     """
     get all longest common substring between **s** and **t**
     :param s: type(s) is str or str list
@@ -392,7 +391,7 @@ def LCS(s, t):
     return cands
 
 
-def test_LCS():
+def test_lcs():
     pr_lst = [
         ("abcd", "bc"),
         ("abcabc", "bc"),
@@ -400,7 +399,7 @@ def test_LCS():
         (["我", "喜欢", "你"], ["我", "也", "喜欢", "你"]),
     ]
     for s, t in pr_lst:
-        print("s = {}, t = {}, LCS = {}".format(s, t, LCS(s, t)))
+        print("s = {}, t = {}, LCS = {}".format(s, t, lcs(s, t)))
 
 
 # 获取antlr中所有可能的预定义方法
@@ -452,13 +451,13 @@ def save_js_functions(js_functions, output_path):
         writer.writelines(out_lines)
 
 
-def convert_var_to_js_grammer(var_statement):
+def convert_var_to_js_grammar(var_statement):
     """
-    convert var statement from antlr to js grammer
-    :param var_statement: var statement in antlr grammer,
+    convert var statement from antlr to js grammar
+    :param var_statement: var statement in antlr grammar,
     when parsing, it must fullmatch "var(FIRST,SECOND);",
     otherwise, return the original statement
-    :return: str, in js grammer, like "var FIRST = SECOND;"
+    :return: str, in js grammar, like "var FIRST = SECOND;"
     """
     statement = var_statement
     lspace_num = len(statement) - len(statement.lstrip())
@@ -470,13 +469,13 @@ def convert_var_to_js_grammer(var_statement):
         return var_statement
 
 
-def revert_var_from_js_grammer(var_statement):
+def revert_var_from_js_grammar(var_statement):
     """
-    revert var statement from js to antlr grammer
-    :param var_statement: var statement in js grammer,
+    revert var statement from js to antlr grammar
+    :param var_statement: var statement in js grammar,
     when parsing, it must fullmatch "var FIRST = SECOND;",
     otherwise, return the original statement
-    :return: str, in antlr grammer, like "var(FIRST,SECOND);"
+    :return: str, in antlr grammar, like "var(FIRST,SECOND);"
     """
     statement = var_statement
     lspace_num = len(statement) - len(statement.lstrip())
@@ -490,11 +489,11 @@ def revert_var_from_js_grammer(var_statement):
         return var_statement
 
 
-def convert_elif_to_js_grammer(line):
+def convert_elif_to_js_grammar(line):
     return line.replace("elif", "else if")
 
 
-def revert_elif_from_js_grammer(line):
+def revert_elif_from_js_grammar(line):
     return line.replace("else if", "elif")
 
 
@@ -509,9 +508,9 @@ def convert_antlr_to_js(antlr, leading_space=" " * 4):
     else:
         for line in antlr_codes:
             if line.lstrip().startswith("var("):
-                js_codes.append(convert_var_to_js_grammer(line))
+                js_codes.append(convert_var_to_js_grammar(line))
             elif "elif" in line:
-                js_codes.append(convert_elif_to_js_grammer(line))
+                js_codes.append(convert_elif_to_js_grammar(line))
             else:
                 js_codes.append(line)
 
@@ -531,9 +530,9 @@ def revert_antlr_from_js(js_codes, leading_spaces=" " * 4):
     else:
         for line in js_codes:
             if line.lstrip().startswith("var "):
-                antlr_codes.append(revert_var_from_js_grammer(line))
+                antlr_codes.append(revert_var_from_js_grammar(line))
             elif "else if" in line:
-                antlr_codes.append(revert_elif_from_js_grammer(line))
+                antlr_codes.append(revert_elif_from_js_grammar(line))
             else:
                 antlr_codes.append(line)
 
@@ -641,15 +640,15 @@ def load_jsons_from_js_file(js_path):
 
 
 @time_cost
-def convert_js_to_xlsx(js_path, xlsx_path, sheet_name=None):
+def convert_js_to_xlsx(js_path, xlsx_path, sheet_name: str=None):
     if not sheet_name:
         assert os.path.isdir(js_path), "when sheet_name is not specified, js_path should be dir"
         fnames = os.listdir(js_path)
         for fname in fnames:
-            sheet_name = fname.split("/")[-1].split(".")[0]
+            sheet_name = str(fname.split("/")[-1]).split(".")[0]
             js_path_i = os.path.join(js_path, fname)
             json_lst = load_jsons_from_js_file(js_path_i)
-            save_jsons_into_xlsx(xlsx_path=xlsx_path, json_lst=json_lst, sheet_name=sheet_name)
+            save_jsons_into_xlsx(xlsx_path=xlsx_path, json_lst=json_lst, sheet_name=str(sheet_name))
     else:
         assert os.path.isfile(js_path), "when sheet_name is specified, js_path should be file"
         json_lst = load_jsons_from_js_file(js_path)
@@ -680,9 +679,10 @@ def revert_js_from_xlsx(js_path, xlsx_path, sheet_name=None):
 @time_cost
 def check_convert_result_between_antlr_and_js(original_tpl_xlsx_path, convert_tpl_xlsx_path, sheet_name=None):
     """
-    check the convert result between antlr and js grammer
+    check the convert result between antlr and js grammar
     :param original_tpl_xlsx_path: the original tpl file, in xlsx
     :param convert_tpl_xlsx_path: the convert tpl file, in xlsx
+    :param sheet_name: the specified sheet, None indicates all sheets
     we first read tpl_item list from original_tpl_xlsx_path,
     then read antlr->js->antlr converted tpl_item list from convert_tpl_xlsx_path,
     then use equal_codes() to compare antlr codes in each tpl_item,
@@ -721,14 +721,14 @@ def check_convert_result_between_antlr_and_js(original_tpl_xlsx_path, convert_tp
 
 
 # 对比两个目录下所有的同名文件的差异
-def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, ignore_RE=None):
+def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, ignore_re=None):
     """
     compare two files use diff tool
     :param path1: the first file to compare
     :param path2: the second file to compare
     :param ignore_all_space: default True, ignore all whitespace, \t, \r, \n, \v, ' '
     :param ignore_blank_lines: default True, ignore blank lines
-    :param ignore_RE: defaut None, otherwise, skip the lines matched ignore_RE
+    :param ignore_re: defaut None, otherwise, skip the lines matched ignore_re
     :return: list, the compared result
     """
     output_lines = []
@@ -736,7 +736,7 @@ def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, igno
     # -w: ignore all space, -B: ignore blank lines
     whitespace_mark = " -w" if ignore_all_space else ""
     blank_line_mark = " -B" if ignore_blank_lines else ""
-    re_exp = ' -I "{}"'.format(ignore_RE) if ignore_RE else ""
+    re_exp = ' -I "{}"'.format(ignore_re) if ignore_re else ""
     cmd = "diff -dTU0{}{}{} {} {}".format(whitespace_mark, blank_line_mark, re_exp, path1, path2)
     file_name = path1.split("/")[-1]
     output_lines.append(format_string("diff {}".format(file_name)))
@@ -745,7 +745,7 @@ def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, igno
     return output_lines
 
 
-def diff_dir(dir_path1, dir_path2, output_path, ignore_all_space=True, ignore_blank_lines=True, ignore_RE=None):
+def diff_dir(dir_path1, dir_path2, output_path, ignore_all_space=True, ignore_blank_lines=True, ignore_re=None):
     """
     compare two dirs use diff tool
     :param dir_path1: the first dir to compare
@@ -753,7 +753,7 @@ def diff_dir(dir_path1, dir_path2, output_path, ignore_all_space=True, ignore_bl
     :param output_path: the output path to store compared result
     :param ignore_all_space: default True, ignore all whitespace, \t, \r, \n, \v, ' '
     :param ignore_blank_lines: default True, ignore blank lines
-    :param ignore_RE: defaut None, otherwise, skip the lines matched ignore_RE
+    :param ignore_re: default None, otherwise, skip the lines matched ignore_re
     :return:
     """
     output_lines = []
@@ -765,9 +765,9 @@ def diff_dir(dir_path1, dir_path2, output_path, ignore_all_space=True, ignore_bl
             if file_name in file_lst2:
                 path1 = os.path.join(dir_path1, file_name)
                 path2 = os.path.join(dir_path2, file_name)
-                output_lines.extend(diff_file(path1, path2, ignore_all_space, ignore_blank_lines, ignore_RE))
+                output_lines.extend(diff_file(path1, path2, ignore_all_space, ignore_blank_lines, ignore_re))
     else:
-        output_lines = diff_file(dir_path1, dir_path2, ignore_all_space, ignore_blank_lines, ignore_RE)
+        output_lines = diff_file(dir_path1, dir_path2, ignore_all_space, ignore_blank_lines, ignore_re)
     diff_info = "\n".join(output_lines)
 
     with open(output_path, "w") as writer:
