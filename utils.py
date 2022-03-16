@@ -210,18 +210,20 @@ def load_jsons_from_xlsx(xlsx_path, sheet_name=None):
     :param sheet_name: the sheet name from which to read data
     :return:
     """
-    if not os.path.exists(xlsx_path):
-        return None
-    wb = openpyxl.load_workbook(xlsx_path)
-    json_dct = {}
-    sheet_names = wb.sheetnames
-    if sheet_name and sheet_name in sheet_names:
-        sheet_names = [sheet_name]
-    for sheet_name in sheet_names:
-        sheet = wb[sheet_name]
-        json_dct[sheet_name] = load_jsons_from_sheet_v2(sheet)
+    try:
+        wb = openpyxl.load_workbook(xlsx_path)
+        json_dct = {}
+        sheet_names = wb.sheetnames
+        if sheet_name and sheet_name in sheet_names:
+            sheet_names = [sheet_name]
+        for sheet_name in sheet_names:
+            sheet = wb[sheet_name]
+            json_dct[sheet_name] = load_jsons_from_sheet_v2(sheet)
 
-    return json_dct
+        return json_dct
+    except FileNotFoundError as e:
+        print(e)
+        return None
 
 
 def eval_cell(val):
