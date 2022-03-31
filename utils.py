@@ -96,6 +96,38 @@ def load_from_jsonl(jsonl_path: str):
     return json_lst
 
 
+@time_cost
+def save_to_json(json_obj: dict, json_path: str):
+    """
+    save json object into file
+    :param json_obj: json object to store
+    :param json_path: file path to store json object, usually endswith ".json"
+    :return:
+    """
+    with open(json_path, "w") as writer:
+        try:
+            json.dump(json_obj, writer, ensure_ascii=False)
+        except Exception as e:
+            print(e)
+
+
+@time_cost
+def load_from_json(json_path: str):
+    """
+    load json object from file
+    :param json_path: type: str, file path storing json objects, usually endswith ".jsonl"
+    :return: json object
+    """
+    json_obj = None
+    with open(json_path, "r") as reader:
+        try:
+            json_obj = json.load(reader)
+        except Exception as e:
+            print(e)
+
+    return json_obj
+
+
 def test_load_from_jsonl():
     jsonl_path = ".test.jsonl"
     json_lst = [{"key1": "val1"}, {"key2": "val2"}]
