@@ -21,6 +21,8 @@ import hashlib
 import traceback
 import subprocess
 
+from openpyxl.utils import get_column_letter
+
 
 def gen_id(string, len_id=8):
     md5 = hashlib.md5()
@@ -177,7 +179,41 @@ def save_jsons_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title", o
             val = obj.get(col_name_lst[j])
             if val is None:
                 val = ""
-            sheet.cell(row=i + 2, column=j + 1).value = str(val)
+            if type(val) is float or type(val) is int:
+                pass
+            else:
+                val = str(val)
+            sheet.cell(row=i + 2, column=j + 1).value = val     # save the original type
+    set_adaptive_column_width(sheet)
+
+
+def set_adaptive_column_width(sheet):
+    # 获取每一列的内容的最大宽度
+    i = 0
+    col_width = []
+    # 每列
+    for col in sheet.columns:
+        # 每行
+        for j in range(len(col)):
+            if j == 0:
+                # 数组增加一个元素
+                col_width.append(len(str(col[j].value)))
+            else:
+                # 获得每列中的内容的最大宽度
+                if col_width[i] < len(str(col[j].value)):
+                    col_width[i] = len(str(col[j].value))
+        i = i + 1
+
+    # 设置列宽
+    for i in range(len(col_width)):
+        # 根据列的数字返回字母
+        col_letter = get_column_letter(i + 1)
+        # 当宽度大于100，宽度设置为100
+        if col_width[i] > 100:
+            sheet.column_dimensions[col_letter].width = 100
+        # 只有当宽度大于10，才设置列宽
+        elif col_width[i] > 10:
+            sheet.column_dimensions[col_letter].width = col_width[i] + 2
 
 
 @time_cost
@@ -212,6 +248,30 @@ def load_jsons_from_xlsx(xlsx_path, sheet_name=None):
     """
     try:
         wb = openpyxl.load_workbook(xlsx_path)
+        json_dct = {}
+        sheet_names = wb.sheetnames
+        if sheet_name and sheet_name in sheet_names:
+            sheet_names = [sheet_name]
+        for sheet_name in sheet_names:
+            sheet = wb[sheet_name]
+            json_dct[sheet_name] = load_jsons_from_sheet_v2(sheet)
+
+        return json_dct
+    except FileNotFoundError as e:
+        print(e)
+        return None
+
+
+@time_cost
+def load_jsons_from_xlsx_v2(xlsx_path, sheet_name=None):
+    """
+    read data from xlsx file, and format it in dict, keys are all the sheet names or the give sheet_name
+    :param xlsx_path: data file path
+    :param sheet_name: the sheet name from which to read data
+    :return:
+    """
+    try:
+        wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         json_dct = {}
         sheet_names = wb.sheetnames
         if sheet_name and sheet_name in sheet_names:
