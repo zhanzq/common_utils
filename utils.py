@@ -106,7 +106,7 @@ def save_to_json(json_obj: dict, json_path: str):
     """
     with open(json_path, "w") as writer:
         try:
-            json.dump(json_obj, writer, ensure_ascii=False)
+            json.dump(json_obj, writer, ensure_ascii=False, indent=4)
         except Exception as e:
             print(e)
 
