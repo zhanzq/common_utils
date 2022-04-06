@@ -415,7 +415,8 @@ def get_merged_cells_from_sheet(sheet):
             pos_lst = convert_str_to_cell_range(range_s)
             i, j = pos_lst[0][0]
             val = sheet[i][j - 1].value  # xlxs row: starts from 0, column: starts from 1
-            mp[val] = []
+            if val not in mp:
+                mp[val] = []
             for lst in pos_lst:
                 mp[val].extend(lst)
 
