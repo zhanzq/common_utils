@@ -179,14 +179,15 @@ def load_from_tsv(tsv_path: str):
     return json_lst
 
 
-def save_jsons_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title", overwrite=False):
+def save_jsons_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title", overwrite=True, auto_filter=True):
     """
     save json list into sheet of xlsx file
     :param wb: workbook, fp of xlsx file
     :param json_lst: the data to store
     :param col_name_lst: the column names of the sheet data, ordered according to col_name_lst
     :param sheet_name: the sheet name to store given data
-    :param overwrite: overwrite the old data or not, default "False"
+    :param overwrite: overwrite the old data or not, default "True"
+    :param auto_filter: auto filter all the fields
     :return:
     """
     if col_name_lst is None:
@@ -216,7 +217,15 @@ def save_jsons_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title", o
             else:
                 val = str(val)
             sheet.cell(row=i + 2, column=j + 1).value = val     # save the original type
+    if auto_filter:
+        set_auto_filter(sheet)
+
     set_adaptive_column_width(sheet)
+
+
+def set_auto_filter(sheet):
+    full_range = "A1:" + get_column_letter(sheet.max_column) + str(sheet.max_row)
+    sheet.auto_filter.ref = full_range
 
 
 def set_adaptive_column_width(sheet):
@@ -249,7 +258,8 @@ def set_adaptive_column_width(sheet):
 
 
 @time_cost
-def save_jsons_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str="Title", overwrite=True):
+def save_jsons_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str="Title",
+                         overwrite=True, auto_filter=True):
     """
     write json list into xlsx file, treate keys as the column names
     :param json_lst: data to store with json format
@@ -257,6 +267,7 @@ def save_jsons_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str
     :param col_name_lst: the column names of the sheet data, ordered according to col_name_lst
     :param sheet_name: the sheet name to store given data
     :param overwrite: overwrite the old data or not, default "True"
+    :param auto_filter: auto filter all the fields
     :return:
     """
     if os.path.exists(xlsx_path):
@@ -265,7 +276,8 @@ def save_jsons_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str
         wb = Workbook()
         wb.remove(wb.get_sheet_by_name("Sheet"))
 
-    save_jsons_into_sheet(wb, json_lst=json_lst, col_name_lst=col_name_lst, sheet_name=sheet_name, overwrite=overwrite)
+    save_jsons_into_sheet(wb, json_lst=json_lst, col_name_lst=col_name_lst, sheet_name=sheet_name,
+                          overwrite=overwrite, auto_filter=auto_filter)
 
     wb.save(xlsx_path)
 
