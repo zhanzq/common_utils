@@ -119,6 +119,9 @@ def load_from_json(json_path: str):
     :return: json object
     """
     json_obj = None
+    if not os.path.exists(json_path):
+        return None
+
     with open(json_path, "r") as reader:
         try:
             json_obj = json.load(reader)
