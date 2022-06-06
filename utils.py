@@ -5,23 +5,15 @@
 # date  : 2021/12/21
 #
 
-import json
-
 import re
 import os
-import openpyxl
-from openpyxl import Workbook
 
 import time
 from functools import wraps
 
 import inspect
 import hashlib
-
-import traceback
 import subprocess
-
-from openpyxl.utils import get_column_letter
 
 
 def gen_id(string, len_id=8):
@@ -60,7 +52,7 @@ def time_cost(f):
     return decorated
 
 
-def format_string(s, length=100):
+def format_string(s, length=80):
     """
     format the print info of given string *s*
     :param s: which to format
@@ -77,43 +69,6 @@ def format_string(s, length=100):
     return res
 
 
-def lcs(s, t):
-    """
-    get all longest common substring between **s** and **t**
-    :param s: type(s) is str or str list
-    :param t: type(t) must be same with type(s)
-    :return: list, contains all lcs, maybe with repetition
-    """
-    max_val = 0
-    cands = set()
-    sz1 = len(s) + 1
-    sz2 = len(t) + 1
-    dp = [[0 for _ in range(sz2)] for _ in range(sz1)]
-    for i in range(1, sz1):
-        for j in range(1, sz2):
-            if s[i-1] == t[j-1]:
-                dp[i][j] = dp[i-1][j-1] + 1
-                if max_val < dp[i][j]:
-                    max_val = dp[i][j]
-                    cands = [s[i-dp[i][j]:i]]
-                elif max_val == dp[i][j]:
-                    cands.append(s[i-dp[i][j]:i])
-#     import pprint
-#     pprint.pprint(dp)           
-    return cands
-
-
-def test_lcs():
-    pr_lst = [
-        ("abcd", "bc"),
-        ("abcabc", "bc"),
-        ("abcabcd", "abab"),
-        (["我", "喜欢", "你"], ["我", "也", "喜欢", "你"]),
-    ]
-    for s, t in pr_lst:
-        print("s = {}, t = {}, LCS = {}".format(s, t, lcs(s, t)))
-
-
 # 对比两个目录下所有的同名文件的差异
 def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, ignore_re=None):
     """
@@ -122,11 +77,11 @@ def diff_file(path1, path2, ignore_all_space=True, ignore_blank_lines=True, igno
     :param path2: the second file to compare
     :param ignore_all_space: default True, ignore all whitespace, \t, \r, \n, \v, ' '
     :param ignore_blank_lines: default True, ignore blank lines
-    :param ignore_re: defaut None, otherwise, skip the lines matched ignore_re
+    :param ignore_re: default None, otherwise, skip the lines matched ignore_re
     :return: list, the compared result
     """
     output_lines = []
-    # -T: prepending a tab, -U0: unified context = 0 lines, -I re: use regex,
+    # -T: pre pending a tab, -U0: unified context = 0 lines, -I re: use regex,
     # -w: ignore all space, -B: ignore blank lines
     whitespace_mark = " -w" if ignore_all_space else ""
     blank_line_mark = " -B" if ignore_blank_lines else ""
@@ -178,9 +133,9 @@ def get_indent_level(s, indent=4):
     :param indent: whitespace num of one level, default 4
     :return:
     """
-    lspace_num = len(s) - len(s.lstrip())
+    l_space_num = len(s) - len(s.lstrip())
 
-    return lspace_num // indent
+    return l_space_num // indent
 
 
 def update_condition(line, condition_stk):
@@ -240,4 +195,3 @@ def get_default_params(config_dct, func):
             args[key] = val
 
     return args
-
