@@ -197,7 +197,7 @@ def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name:
         wb = Workbook()
         wb.remove(wb.get_sheet_by_name("Sheet"))
 
-    print("save {} records".format(len(json_lst)))
+    print("save {} records into sheet: {}".format(len(json_lst), sheet_name))
     save_json_list_into_sheet(wb, json_lst=json_lst, col_name_lst=col_name_lst, sheet_name=sheet_name,
                               overwrite=overwrite, auto_filter=auto_filter)
 
