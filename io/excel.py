@@ -98,9 +98,9 @@ def _convert_str_to_cell_range(s):
     first2, second2 = _convert_pos_26bit(items[1])
 
     cell_range = []
-    for i in range(first1, first2+1):
+    for i in range(first1, first2 + 1):
         row = []
-        for j in range(second1, second2+1):
+        for j in range(second1, second2 + 1):
             row.append((i, j))
         cell_range.append(row)
 
@@ -171,7 +171,7 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
                 pass
             else:
                 val = str(val)
-            sheet.cell(row=i + 2, column=j + 1).value = val     # save the original type
+            sheet.cell(row=i + 2, column=j + 1).value = val  # save the original type
     if auto_filter:
         _set_auto_filter(sheet)
 
@@ -179,7 +179,7 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
 
 
 @time_cost
-def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str="Title",
+def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=Nene, sheet_name: str = "Title",
                              overwrite=True, auto_filter=True):
     """
     write json list into xlsx file, treat keys as the column names
@@ -202,7 +202,6 @@ def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name:
         save_json_list_into_sheet(wb, json_lst=json_lst, col_name_lst=col_name_lst, sheet_name=sheet_name,
                                   overwrite=overwrite, auto_filter=auto_filter)
         wb.save(xlsx_path)
-
 
 
 def load_json_list_from_sheet(sheet):
