@@ -5,9 +5,12 @@
 # date  : 2022/3/4
 #
 import collections
+import json
 import re
 import sys
 
+from io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
+from io.txt import load_from_json, save_to_json, save_to_jsonl
 from utils import *
 sys.path.append("/Users/zhanzq/github")
 from antlr4_python.data_utils import get_tree, format_tree
@@ -22,7 +25,7 @@ class TPL(object):
 
     def __init__(self, tpl_xlsx_path, do_not_parse_perceptual=True):
         self.tpl_data_path = tpl_xlsx_path
-        self.tpl_dct = load_jsons_from_xlsx(xlsx_path=self.tpl_data_path)
+        self.tpl_dct = load_json_list_from_xlsx(xlsx_path=self.tpl_data_path)
         self.tts_dist = {}
         self.diff_tts_dist = {}
         self.tts_lst = []
@@ -70,7 +73,7 @@ class TPL(object):
 
         print("total tts num: {}".format(len(all_tts_info)))
         tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
-        save_jsons_into_xlsx(json_lst=all_tts_info, xlsx_path=tts_info_path,
+        save_json_list_into_xlsx(json_lst=all_tts_info, xlsx_path=tts_info_path,
                              sheet_name="{}_{}_md5".format(car_type, version))
         tts_info_jsonl_path = "/Users/zhanzq/Downloads/tts_info_md5_{}_{}.jsonl".format(car_type, version)
         save_to_jsonl(json_lst=all_tts_info, jsonl_path=tts_info_jsonl_path)
@@ -511,7 +514,7 @@ def process_slot_info():
     slot_info_path = "/Users/zhanzq/Downloads/slot_info.xlsx"
 
     sheet_name = "产品待确认的槽位语义信息_0331"
-    slot_info_lst = load_jsons_from_xlsx_v2(xlsx_path=slot_info_path, sheet_name=sheet_name)[sheet_name]
+    slot_info_lst = load_json_list_from_xlsx(xlsx_path=slot_info_path, sheet_name=sheet_name)[sheet_name]
 
     slot_info_dct = {}
     for slot_info in slot_info_lst:
@@ -1031,7 +1034,7 @@ def get_from_unity(unity_info_path=None):
     if not unity_info_path:
         unity_info_path = "/Users/zhanzq/Downloads/unity.xlsx"
 
-    json_lst = load_jsons_from_xlsx_v2(xlsx_path=unity_info_path, sheet_name="Sheet1")["Sheet1"]
+    json_lst = load_json_list_from_xlsx(xlsx_path=unity_info_path, sheet_name="Sheet1")["Sheet1"]
     res = {}
     for item in json_lst:
         key, val = item["未成功解析的判断条件"], item["语义"]
@@ -1045,7 +1048,7 @@ def get_from_adjust_info(perceptual_data_path=None):
     if not perceptual_data_path:
         perceptual_data_path = "/Users/zhanzq/Downloads/感知点汇总.xlsx"
     sheet_name = "感知点汇总表"
-    perceptual_data_lst = load_jsons_from_xlsx_v2(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
+    perceptual_data_lst = load_json_list_from_xlsx(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
     res = {}
     for item1 in perceptual_data_lst:
         key1 = item1["感知点"]
@@ -1091,7 +1094,7 @@ def parse_perceptual_item(item):
 
 def parse_perceptual_data(perceptual_data_path):
     sheet_name = "感知点汇总表"
-    perceptual_data_lst = load_jsons_from_xlsx_v2(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
+    perceptual_data_lst = load_json_list_from_xlsx(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
     print("total perceptual data: {}".format(len(perceptual_data_lst)))
     #     for item in perceptual_data_lst:
     #         print((item["感知点"] or "") + ": " + (item["领域"] or ""))
