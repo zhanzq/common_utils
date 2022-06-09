@@ -179,7 +179,7 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
 
 
 @time_cost
-def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=Nene, sheet_name: str = "Title",
+def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name: str = "Title",
                              overwrite=True, auto_filter=True):
     """
     write json list into xlsx file, treat keys as the column names
