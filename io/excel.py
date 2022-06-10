@@ -235,7 +235,7 @@ def load_json_list_from_sheet(sheet):
 
 
 @time_cost
-def load_json_list_from_xlsx(xlsx_path, sheet_name=None):
+def load_json_list_from_xlsx(xlsx_path, sheet_names=None):
     """
     read data from xlsx file, and format it in dict, keys are all the sheet names or the give sheet_name
     :param xlsx_path: data file path
@@ -245,10 +245,17 @@ def load_json_list_from_xlsx(xlsx_path, sheet_name=None):
     try:
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         json_dct = {}
-        sheet_names = wb.sheetnames
-        if sheet_name and sheet_name in sheet_names:
-            sheet_names = [sheet_name]
-        for sheet_name in sheet_names:
+        if not sheet_names:
+            sheet_names = wb.sheetnames
+        else:
+            valid_sheet_names = []
+            for sheet_name in sheet_names:
+                if sheet_name in wb.sheetnames:
+                    valid_sheet_names.append(sheet_name)
+                else:
+                    print("sheet: {} not found".format(sheet_name))
+
+        for sheet_name in valid_sheet_names:
             sheet = wb[sheet_name]
             json_lst = load_json_list_from_sheet(sheet)
             json_dct[sheet_name] = json_lst
