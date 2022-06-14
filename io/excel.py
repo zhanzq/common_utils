@@ -239,14 +239,14 @@ def load_json_list_from_xlsx(xlsx_path, sheet_names=None):
     """
     read data from xlsx file, and format it in dict, keys are all the sheet names or the give sheet_name
     :param xlsx_path: data file path
-    :param sheet_name: the sheet name from which to read data
+    :param sheet_names: the sheet names from which to read data
     :return:
     """
     try:
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         json_dct = {}
         if not sheet_names:
-            sheet_names = wb.sheetnames
+            valid_sheet_names = wb.sheetnames
         else:
             valid_sheet_names = []
             for sheet_name in sheet_names:
@@ -265,6 +265,40 @@ def load_json_list_from_xlsx(xlsx_path, sheet_names=None):
     except FileNotFoundError as e:
         print(e)
         return None
+
+
+def check_title(xlsx_path, necessary_titles, sheet_names=None):
+    """
+    check the necessary titles are complement or not for all sheets in xlsx file
+    :param xlsx_path: input xlsx file path
+    :param necessary_titles: necessary titles the sheets must contain
+    :param sheet_names: the sheets to check
+    :return:
+    """
+    try:
+        wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+        json_dct = {}
+        if not sheet_names:
+            sheet_names = wb.sheetnames
+
+        valid = True
+        for sheet_name in sheet_names:
+            sheet = wb[sheet_name]
+
+            rows = sheet.rows
+            col_names = []
+            try:
+                col_names = [it.value for it in rows.__next__()]
+            except StopIteration:
+                pass
+            for title in necessary_titles:
+                if title not in col_names:
+                    print("sheet: {} has no title: {}".format(sheet_name, title))
+                    valid = False
+    except e:
+        print(e)
+    finally:
+        return valid
 
 
 def _test():
