@@ -10,7 +10,7 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-from ..utils import time_cost
+from common_utils.utils import time_cost
 
 
 def _set_auto_filter(sheet):

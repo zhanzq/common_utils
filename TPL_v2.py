@@ -9,8 +9,8 @@ import json
 import re
 import sys
 
-from io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
-from io.txt import load_from_json, save_to_json, save_to_jsonl
+from text_io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
+from text_io.txt import load_from_json, save_to_json, save_to_jsonl
 from utils import *
 sys.path.append("/Users/zhanzq/github")
 from antlr4_python.data_utils import get_tree, format_tree

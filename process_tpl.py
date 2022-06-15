@@ -9,12 +9,10 @@
 import os
 import re
 
-from utils import load_jsons_from_xlsx, save_jsons_into_xlsx, load_jsons_from_xlsx_v2, gen_id, save_to_json, \
-    load_from_json
-from utils import load_from_jsonl, save_to_jsonl
-from utils import format_string
-# from TPL import TPL, TplItem
+from text_io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
+from text_io.txt import load_from_jsonl, save_to_jsonl, load_from_json, save_to_json
 
+from utils import format_string
 from TPL_v2 import TPL, TplItem
 
 
@@ -118,7 +116,7 @@ def get_config_items(json_dct):
 
 
 def generate_nlg_id_info(nlg_id_info_path, nlg_xlsx_path):
-    json_dct = load_jsons_from_xlsx_v2(xlsx_path=nlg_xlsx_path)
+    json_dct = load_json_list_from_xlsx(xlsx_path=nlg_xlsx_path)
     items = get_config_items(json_dct)
     print("config items: {}\nexamples: \n{}".format(len(items), items[0]))
     save_to_jsonl(json_lst=items, jsonl_path=nlg_id_info_path)
@@ -212,7 +210,7 @@ def generate_tts_changed_info(tts_info_path, tts_changed_info_path, valid_nlg_md
 
     version = tts_info_path.split("_")[-1].split(".")[0]
     sheet_name = "E38_{}_changed".format(version)
-    save_jsons_into_xlsx(xlsx_path=tts_changed_info_path, json_lst=out_lst, sheet_name=sheet_name)
+    save_json_list_into_xlsx(xlsx_path=tts_changed_info_path, json_lst=out_lst, sheet_name=sheet_name)
 
 
 def filter_invalid_nlg_id(format_code, valid_nlg_md5s=None):
@@ -241,7 +239,7 @@ def merge_tpl(tts_info_path, base_tpl_path, merged_xlsx_path, valid_nlg_md5s=Non
     for tpl_item in json_lst:
         key = tpl_item["intent"] + (tpl_item["branch"] or "default")
         format_codes_dct[key] = tpl_item["format"]
-    base_json_dct = load_jsons_from_xlsx(base_tpl_path)
+    base_json_dct = load_json_list_from_xlsx(base_tpl_path)
 
     for car_tp, base_json_lst in base_json_dct.items():
         if car_tp == car_type:
@@ -257,14 +255,14 @@ def merge_tpl(tts_info_path, base_tpl_path, merged_xlsx_path, valid_nlg_md5s=Non
 
                 merged_json_lst.append(item)
             print("total insert nlg: {}".format(changed_num))
-            save_jsons_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=merged_json_lst, sheet_name=car_tp)
+            save_json_list_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=merged_json_lst, sheet_name=car_tp)
         else:
-            save_jsons_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=base_json_lst, sheet_name=car_tp)
+            save_json_list_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=base_json_lst, sheet_name=car_tp)
 
 
 def merge_tpl_v2(tts_info_path, base_tpl_path, merged_xlsx_path, car_type="E38", version="0420"):
     sheet_name = "{}_{}_tid".format(car_type, version)
-    json_lst = load_jsons_from_xlsx_v2(xlsx_path=tts_info_path, sheet_name=sheet_name)[sheet_name]
+    json_lst = load_json_list_from_xlsx(xlsx_path=tts_info_path, sheet_names=[sheet_name])[sheet_name]
     format_codes_lst = []
     pre_key = None
     for tpl_item in json_lst:
@@ -274,7 +272,7 @@ def merge_tpl_v2(tts_info_path, base_tpl_path, merged_xlsx_path, car_type="E38",
         pre_key = key
 
     print("format_codes_lst: {}".format(len(format_codes_lst)))
-    base_json_dct = load_jsons_from_xlsx(base_tpl_path)
+    base_json_dct = load_json_list_from_xlsx(base_tpl_path)
     for car_tp, base_json_lst in base_json_dct.items():
         if car_tp == car_type:
             merged_json_lst = []
@@ -285,9 +283,9 @@ def merge_tpl_v2(tts_info_path, base_tpl_path, merged_xlsx_path, car_type="E38",
                     base_it["antlr"] = format_codes_lst[i]["tpl"]
                     i += 1
                 merged_json_lst.append(base_it)
-            save_jsons_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=merged_json_lst, sheet_name=car_tp)
+            save_json_list_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=merged_json_lst, sheet_name=car_tp)
         else:
-            save_jsons_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=base_json_lst, sheet_name=car_tp)
+            save_json_list_into_xlsx(xlsx_path=merged_xlsx_path, json_lst=base_json_lst, sheet_name=car_tp)
 
 
 def add_param_into_tpl(tpl):
@@ -295,7 +293,7 @@ def add_param_into_tpl(tpl):
 
 
 def add_param_into_nlg(tpl_xlsx_path, car_type="E38", version="0420"):
-    base_json_dct = load_jsons_from_xlsx(tpl_xlsx_path)
+    base_json_dct = load_json_list_from_xlsx(tpl_xlsx_path)
     new_tpl_xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}-format.xlsx".format(version)
     for car_tp, base_json_lst in base_json_dct.items():
         if car_tp == car_type:
@@ -305,9 +303,9 @@ def add_param_into_nlg(tpl_xlsx_path, car_type="E38", version="0420"):
                 it.add_param_into_nlg()
                 base_it["antlr"] = it.tpl
                 merged_json_lst.append(base_it)
-            save_jsons_into_xlsx(xlsx_path=new_tpl_xlsx_path, json_lst=merged_json_lst, sheet_name=car_tp)
+            save_json_list_into_xlsx(xlsx_path=new_tpl_xlsx_path, json_lst=merged_json_lst, sheet_name=car_tp)
         else:
-            save_jsons_into_xlsx(xlsx_path=new_tpl_xlsx_path, json_lst=base_json_lst, sheet_name=car_tp)
+            save_json_list_into_xlsx(xlsx_path=new_tpl_xlsx_path, json_lst=base_json_lst, sheet_name=car_tp)
 
 
 def load_command_dct(command_lst_path):
@@ -317,7 +315,7 @@ def load_command_dct(command_lst_path):
     :return: dict(), in format: {INTENT1: {"domain": DOMAIN1, "intent": INTENT1, "example": EXAMPLE1}}
     """
 
-    command_lst = load_jsons_from_xlsx(xlsx_path=command_lst_path, sheet_name="Table_KG").get("Table_KG")
+    command_lst = load_json_list_from_xlsx(xlsx_path=command_lst_path, sheet_names=["Table_KG"]).get("Table_KG")
     command_dct = {}
     for item in command_lst:
         intent = item["intent"]
@@ -380,7 +378,7 @@ def parse_nlg_info_from_xlsx(merged_xlsx_path, command_lst_path, tpl_nlg_info_pa
     """
     command_dct = load_command_dct(command_lst_path=command_lst_path)
     nlg_info_lst = []
-    tpl_item_lst = load_jsons_from_xlsx(xlsx_path=merged_xlsx_path, sheet_name="E38")["E38"]
+    tpl_item_lst = load_json_list_from_xlsx(xlsx_path=merged_xlsx_path, sheet_names=["E38"])["E38"]
     valid_tts_num = 0
     invalid_tts_num = 0
     for tpl_item in tpl_item_lst:
@@ -397,13 +395,13 @@ def parse_nlg_info_from_xlsx(merged_xlsx_path, command_lst_path, tpl_nlg_info_pa
     print("total invalid tts num: {}".format(invalid_tts_num))
     nlg_info_lst.sort(key=lambda it: (it["nlg_info"], it["intent"], it["branch"]))
 
-    save_jsons_into_xlsx(xlsx_path=tpl_nlg_info_path, json_lst=nlg_info_lst, sheet_name="tpl_nlg_info")
+    save_json_list_into_xlsx(xlsx_path=tpl_nlg_info_path, json_lst=nlg_info_lst, sheet_name="tpl_nlg_info")
 
     return nlg_info_lst
 
 
 def generate_filtered_nlg_id_info(nlg_id_info_path, tpl_nlg_info_path, filtered_nlg_id_info_path):
-    nlg_info_lst = load_jsons_from_xlsx(tpl_nlg_info_path, sheet_name="tpl_nlg_info")["tpl_nlg_info"]
+    nlg_info_lst = load_json_list_from_xlsx(tpl_nlg_info_path, sheet_names=["tpl_nlg_info"])["tpl_nlg_info"]
     nlg_id_info_lst = load_from_jsonl(nlg_id_info_path)
     nlg_info_dct = {}
     for nlg_info in nlg_info_lst:
@@ -420,12 +418,12 @@ def generate_filtered_nlg_id_info(nlg_id_info_path, tpl_nlg_info_path, filtered_
         if key in nlg_info_dct and nlg_info_dct[key]["nlg_info"] == "全部":
             filtered_nlg_id_info_lst.append(nlg_id_info)
 
-    save_jsons_into_xlsx(xlsx_path=filtered_nlg_id_info_path, json_lst=filtered_nlg_id_info_lst,
-                         sheet_name="filtered_nlg_id_info")
+    save_json_list_into_xlsx(xlsx_path=filtered_nlg_id_info_path, json_lst=filtered_nlg_id_info_lst,
+                             sheet_name="filtered_nlg_id_info")
 
 
 def generate_filtered_nlg_id_info_by_intent(nlg_id_info_path, tpl_nlg_info_path, filtered_nlg_id_info_path):
-    nlg_info_lst = load_jsons_from_xlsx(tpl_nlg_info_path, sheet_name="tpl_nlg_info")["tpl_nlg_info"]
+    nlg_info_lst = load_json_list_from_xlsx(tpl_nlg_info_path, sheet_names=["tpl_nlg_info"])["tpl_nlg_info"]
     nlg_id_info_lst = load_from_jsonl(nlg_id_info_path)
     valid_intent_dct = {}
     for nlg_info in nlg_info_lst:
@@ -443,8 +441,8 @@ def generate_filtered_nlg_id_info_by_intent(nlg_id_info_path, tpl_nlg_info_path,
 
     print("filter valid intent: {}".format(len([intent for intent in valid_intent_dct if valid_intent_dct[intent]])))
     print("filter valid tts: {}".format(len(filtered_nlg_id_info_lst)))
-    save_jsons_into_xlsx(xlsx_path=filtered_nlg_id_info_path, json_lst=filtered_nlg_id_info_lst,
-                         sheet_name="filtered_nlg_id_info_by_intent")
+    save_json_list_into_xlsx(xlsx_path=filtered_nlg_id_info_path, json_lst=filtered_nlg_id_info_lst,
+                             sheet_name="filtered_nlg_id_info_by_intent")
 
 
 def compare_two_version_tts_info(old_version, new_version):
@@ -477,7 +475,7 @@ def compare_two_version_tts_info(old_version, new_version):
 
 def divide_labor(version):
     division_path = "/Users/zhanzq/Downloads/语音全局&可见即可说_需求汇总文档-0401.xlsx"
-    json_dct = load_jsons_from_xlsx_v2(xlsx_path=division_path)
+    json_dct = load_json_list_from_xlsx(xlsx_path=division_path)
     division_dct = {}
     pre_name = None
     for sheet_name in ["车辆控制", "空调", "系统设置"]:
@@ -496,7 +494,7 @@ def divide_labor(version):
     tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
     sheet_name = "E38_{}".format(version)
     intent_e38 = set()
-    tts_info_lst = load_jsons_from_xlsx_v2(xlsx_path=tts_info_path, sheet_name=sheet_name)[sheet_name]
+    tts_info_lst = load_json_list_from_xlsx(xlsx_path=tts_info_path, sheet_names=[sheet_name])[sheet_name]
     for tts_info in tts_info_lst:
         intent = tts_info["intent"]
         if tts_info["domain"] in ["system", "ac", "control"]:
@@ -507,7 +505,7 @@ def divide_labor(version):
     print(format_string("E38的领域意图共计: {}".format(len(intent_e38))))
     print(format_string("公共意图共计: {}".format(len(intent_e38.intersection(division_dct.keys())))))
 
-    save_jsons_into_xlsx(xlsx_path=tts_info_path, sheet_name=sheet_name + "-分工", json_lst=tts_info_lst)
+    save_json_list_into_xlsx(xlsx_path=tts_info_path, sheet_name=sheet_name + "-分工", json_lst=tts_info_lst)
 
 
 def convert_md5_to_tid_in_tpl(tpl, md5_to_tid):
@@ -553,11 +551,11 @@ def update_md5_to_tid(start_tid, md5_to_tid):
 
 
 def insert_nlg_md5(tpl_xlsx_path, car_type="E38", version="0420"):
-    item_dct = load_jsons_from_xlsx_v2(xlsx_path=tpl_xlsx_path)
+    item_dct = load_json_list_from_xlsx(xlsx_path=tpl_xlsx_path)
     tpl_with_md5_xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param_{}-md5.xlsx".format(version)
     for sheet_name, item_lst in item_dct.items():
         if sheet_name != car_type:
-            save_jsons_into_xlsx(xlsx_path=tpl_with_md5_xlsx_path, json_lst=item_lst, sheet_name=sheet_name)
+            save_json_list_into_xlsx(xlsx_path=tpl_with_md5_xlsx_path, json_lst=item_lst, sheet_name=sheet_name)
         else:
             out_lst = []
             for item in item_lst:
@@ -567,7 +565,7 @@ def insert_nlg_md5(tpl_xlsx_path, car_type="E38", version="0420"):
                     item["antlr"] = tpl_item.tpl
                 out_lst.append(item)
 
-            save_jsons_into_xlsx(xlsx_path=tpl_with_md5_xlsx_path, json_lst=out_lst, sheet_name=sheet_name)
+            save_json_list_into_xlsx(xlsx_path=tpl_with_md5_xlsx_path, json_lst=out_lst, sheet_name=sheet_name)
 
     return
 
@@ -579,7 +577,7 @@ def convert_md5_to_tid(car_type="E38", version="0420", md5_to_tid_path=None):
 
     tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
     sheet_name = "{}_{}_md5".format(car_type, version)
-    tts_info_lst = load_jsons_from_xlsx_v2(xlsx_path=tts_info_path, sheet_name=sheet_name)[sheet_name]
+    tts_info_lst = load_json_list_from_xlsx(xlsx_path=tts_info_path, sheet_names=[sheet_name])[sheet_name]
     max_tid = 0
     for tts_info in tts_info_lst:
         md5 = tts_info.get("nlg_md5")
@@ -612,7 +610,7 @@ def convert_md5_to_tid(car_type="E38", version="0420", md5_to_tid_path=None):
 
     save_to_json(json_obj=md5_to_tid, json_path=md5_to_tid_path)
     sheet_name = "{}_{}_tid".format(car_type, version)
-    save_jsons_into_xlsx(xlsx_path=tts_info_path, sheet_name=sheet_name, json_lst=tts_info_lst)
+    save_json_list_into_xlsx(xlsx_path=tts_info_path, sheet_name=sheet_name, json_lst=tts_info_lst)
 
 
 def parse_tpl_data(car_type="E38", version="0420"):
@@ -622,7 +620,7 @@ def parse_tpl_data(car_type="E38", version="0420"):
     tpl = TPL(tpl_xlsx_path=tpl_xlsx_path)
     tpl.analysis_tpl_data(version=version, car_type=car_type)
     sheet_name = "{}_{}_md5".format(car_type, version)
-    json_lst = load_jsons_from_xlsx_v2("/Users/zhanzq/Downloads/tts_info.xlsx", sheet_name=sheet_name)[sheet_name]
+    json_lst = load_json_list_from_xlsx("/Users/zhanzq/Downloads/tts_info.xlsx", sheet_names=[sheet_name])[sheet_name]
     bad_conds = []
     for item in json_lst:
         if not item["未成功解析的判断条件"]:
@@ -636,51 +634,55 @@ def parse_tpl_data(car_type="E38", version="0420"):
             bad_conds.append(
                 {"未成功解析的判断条件": bad_cond, "domain": item["domain"], "intent": item["intent"], "感知点": perceptual_data})
     bad_tpl_info_path = "/Users/zhanzq/Downloads/un_parsed_tpl_info_{}_{}.xlsx".format(car_type, version)
-    save_jsons_into_xlsx(xlsx_path=bad_tpl_info_path, sheet_name="未成功解析的判断条件", json_lst=bad_conds)
+    save_json_list_into_xlsx(xlsx_path=bad_tpl_info_path, sheet_name="未成功解析的判断条件", json_lst=bad_conds)
 
 
 def process_nlg_id_info(car_type="E38", version="0420"):
     # 0. parse tpl xlsx file, generate tts_info file, and insert nlg_md5
     parse_tpl_data(car_type=car_type, version=version)
 
-    # # 1. get nlg_id_info, save into jsonl file
-    nlg_id_info_path = "/Users/zhanzq/Downloads/nlg_id_info_v2.txt"
-    nlg_xlsx_path = "/Users/zhanzq/Downloads/语音全局NLG需求汇总文档_v2.xlsx"
-    # generate_nlg_id_info(nlg_id_info_path=nlg_id_info_path, nlg_xlsx_path=nlg_xlsx_path)
+    # # # 1. get nlg_id_info, save into jsonl file
+    # nlg_id_info_path = "/Users/zhanzq/Downloads/nlg_id_info_v2.txt"
+    # nlg_xlsx_path = "/Users/zhanzq/Downloads/语音全局NLG需求汇总文档_v2.xlsx"
+    # # generate_nlg_id_info(nlg_id_info_path=nlg_id_info_path, nlg_xlsx_path=nlg_xlsx_path)
+    # #
     #
+    # # 4. generate filtered nlg_id info file, and provide it to testers to validate functions
+    # command_lst_path = "/Users/zhanzq/Downloads/command_list_pre.xlsx"
+    # tpl_nlg_info_path = "/Users/zhanzq/Downloads/tpl_nlg_info_pre.xlsx"
+    # # parse_nlg_info_from_xlsx(merged_xlsx_path=merged_xlsx_path, command_lst_path=command_lst_path,
+    # #                          tpl_nlg_info_path=tpl_nlg_info_path)
+    #
+    # # filtered_nlg_id_info_path = "/Users/zhanzq/Downloads/filtered_nlg_id_info_pre.xlsx"
+    # # generate_filtered_nlg_id_info(nlg_id_info_path=nlg_id_info_path, tpl_nlg_info_path=tpl_nlg_info_path,
+    # #                               filtered_nlg_id_info_path=filtered_nlg_id_info_path)
+    #
+    # filtered_nlg_id_info_path = "/Users/zhanzq/Downloads/filtered_nlg_id_info.xlsx"
+    # # generate_filtered_nlg_id_info_by_intent(nlg_id_info_path=nlg_id_info_path, tpl_nlg_info_path=tpl_nlg_info_path,
+    # #                                         filtered_nlg_id_info_path=filtered_nlg_id_info_path)
 
-    # 4. generate filtered nlg_id info file, and provide it to testers to validate functions
-    command_lst_path = "/Users/zhanzq/Downloads/command_list_pre.xlsx"
-    tpl_nlg_info_path = "/Users/zhanzq/Downloads/tpl_nlg_info_pre.xlsx"
-    # parse_nlg_info_from_xlsx(merged_xlsx_path=merged_xlsx_path, command_lst_path=command_lst_path,
-    #                          tpl_nlg_info_path=tpl_nlg_info_path)
+    # # 7. add division of labor info
+    # # divide_labor(version=version)
+    #
+    # # 8. replace nlg_md5 with nlg_id
+    # convert_md5_to_tid(car_type=car_type, version=version)
+    #
+    # # 9. merge tpl
+    # tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
+    # base_tpl_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}.xlsx".format(version)
+    # merged_xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}-merged.xlsx".format(version)
+    # merge_tpl_v2(tts_info_path=tts_info_path, base_tpl_path=base_tpl_path,
+    #              merged_xlsx_path=merged_xlsx_path, car_type=car_type, version=version)
+    #
+    # # 10. add param into nlg()
+    # tpl_xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}-merged.xlsx".format(version)
+    # add_param_into_nlg(tpl_xlsx_path=tpl_xlsx_path, car_type=car_type, version=version)
 
-    # filtered_nlg_id_info_path = "/Users/zhanzq/Downloads/filtered_nlg_id_info_pre.xlsx"
-    # generate_filtered_nlg_id_info(nlg_id_info_path=nlg_id_info_path, tpl_nlg_info_path=tpl_nlg_info_path,
-    #                               filtered_nlg_id_info_path=filtered_nlg_id_info_path)
 
-    filtered_nlg_id_info_path = "/Users/zhanzq/Downloads/filtered_nlg_id_info.xlsx"
-    # generate_filtered_nlg_id_info_by_intent(nlg_id_info_path=nlg_id_info_path, tpl_nlg_info_path=tpl_nlg_info_path,
-    #                                         filtered_nlg_id_info_path=filtered_nlg_id_info_path)
-
-    # 7. add division of labor info
-    # divide_labor(version=version)
-
-    # 8. replace nlg_md5 with nlg_id
-    convert_md5_to_tid(car_type=car_type, version=version)
-
-    # 9. merge tpl
-    tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
-    base_tpl_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}.xlsx".format(version)
-    merged_xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}-merged.xlsx".format(version)
-    merge_tpl_v2(tts_info_path=tts_info_path, base_tpl_path=base_tpl_path,
-                 merged_xlsx_path=merged_xlsx_path, car_type=car_type, version=version)
-
-    # 10. add param into nlg()
-    tpl_xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param-{}-merged.xlsx".format(version)
-    add_param_into_nlg(tpl_xlsx_path=tpl_xlsx_path, car_type=car_type, version=version)
+def main():
+    version = "0614"
+    process_nlg_id_info(car_type="E38", version=version)
 
 
 if __name__ == "__main__":
-    version = "0523"
-    process_nlg_id_info(car_type="E38", version=version)
+    main()

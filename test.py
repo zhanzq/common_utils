@@ -1,6 +1,6 @@
 from convert.js import revert_js_from_xlsx
 from TPL_v2 import TplItem
-from io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
+from text_io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
 
 
 def test_tpl_analysis(version="v1"):

@@ -7,7 +7,7 @@
 
 import os
 import json
-from ..utils import time_cost
+from common_utils.utils import time_cost
 
 
 @time_cost
