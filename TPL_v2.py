@@ -356,7 +356,8 @@ class TplItem(object):
         parse single tpl record
         """
         try:
-            self.tpl = format_tree(get_tree(self.tpl), -1)
+            tree, errors = get_tree(self.tpl)
+            self.tpl = format_tree(tree, -1)
             # self.data = self.get_perception_data()
             # self.conditions = self.get_conditions()
             self.insert_nlg_md5_v2()
