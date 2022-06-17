@@ -74,7 +74,7 @@ class TPL(object):
         print("total tts num: {}".format(len(all_tts_info)))
         tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
         save_json_list_into_xlsx(json_lst=all_tts_info, xlsx_path=tts_info_path,
-                             sheet_name="{}_{}_md5".format(car_type, version))
+                                 sheet_name="{}_{}_md5".format(car_type, version))
         tts_info_jsonl_path = "/Users/zhanzq/Downloads/tts_info_md5_{}_{}.jsonl".format(car_type, version)
         save_to_jsonl(json_lst=all_tts_info, jsonl_path=tts_info_jsonl_path)
 
@@ -197,7 +197,7 @@ class TPL(object):
         tpl_items = self.tpl_dct[car_type]
         for item in tpl_items:
             tpl_item = TplItem(item, self.tts_map, self.nlg_id_map, self.tts_id_map)
-            print("intent: {}, slot: {}".format(tpl_item.intent, tpl_item.slot))
+            # print("intent: {}, slot: {}".format(tpl_item.intent, tpl_item.slot))
             if domain is not None and domain != tpl_item.domain:
                 continue
             self.update_cond_semantics(tpl_item=tpl_item, cond_semantic_dct=perceptual_data_dct)
@@ -357,6 +357,8 @@ class TplItem(object):
         """
         try:
             tree, errors = get_tree(self.tpl)
+            if errors:
+                print("intent: {}, parsing errors:\n{}".format(self.intent, errors))
             self.tpl = format_tree(tree, -1)
             # self.data = self.get_perception_data()
             # self.conditions = self.get_conditions()
@@ -413,6 +415,19 @@ class TplItem(object):
 
         return tts_info
 
+    @staticmethod
+    def get_next_nlg_id(code_lines, i):
+        for line in code_lines[i:]:
+            if line.strip().startswith("}"):
+                return None
+            else:
+                lst = re.findall("nlg\([\"'](.*?)[\"']", line)
+                if lst:
+                    nlg_id = lst[0]
+                    return nlg_id
+
+        return None
+
     def insert_nlg_md5_v2(self):
         add_tpl_lines = []
         condition_stk = []
@@ -438,14 +453,12 @@ class TplItem(object):
                 tts_info["exact_condition_lst"] = exact_condition_lst
                 self.tts_lst.append(tts)
                 add_tpl_lines.append(line)
-                nxt_line = None
-                if i < len(code_lines) - 1:
-                    nxt_line = code_lines[i+1].strip()
-                if not nxt_line or not nxt_line.startswith("nlg("):
+                nlg_id = TplItem.get_next_nlg_id(code_lines, i+1)
+                if not nlg_id:
                     add_tpl_lines.append('{}nlg("{}");'.format(leading_spaces, tts_info["nlg_md5"]))
                     tts_info["nlg_id"] = None
                 else:
-                    tts_info["nlg_id"] = re.findall("nlg\([\"'](.*)[\"']\)", nxt_line)[0]
+                    tts_info["nlg_id"] = nlg_id
                 self.tts_info_lst.append(tts_info)
             else:
                 add_tpl_lines.append(line)
