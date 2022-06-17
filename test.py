@@ -1,7 +1,7 @@
 from convert.js import revert_js_from_xlsx
 from TPL_v2 import TplItem
 from text_io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
-
+from utils import parse_code_condition
 
 def test_tpl_analysis(version="v1"):
     tpl_path = "/Users/zhanzq/Downloads/intent_to_command_with_param_{}.xlsx".format(version)
@@ -57,6 +57,86 @@ def test_tpl_analysis(version="v1"):
     # tpl_pre.analysis_tpl_data(version="pre", car_type="E38")
 
 
+def test_parse_code_condition():
+    tpl = """
+    if(eqMethod(0,data('get.car.level'))){
+    tts('当前配置没有这个功能哦');
+    nlg(\"PN_unsupport_AB_1\");
+    return;
+}
+var(_currentMode,data('combo.get.current.user.mode'));
+if(eqMethod('spacecapsule_mode_movie',_currentMode)){
+    if(data('is.unity.app.top','XPPlugin_SpaceCapsuleMainPageApp')){
+        var('XPPlugin_SpaceCapsuleMainPageApp');
+    }else{
+        var(_appName,'XPPlugin_SpaceCapsuleApp');
+    }
+    var(_unityStatus,data('unity.app.close',param(\"{'app_name':'%1$s'}\",_appName)));
+    if(eqMethod(_unityStatus,1)){
+        tts('要关闭的内容已经关了哦');
+        nlg(\"PN_pageAlreadyClosed\");
+    }elif(eqMethod(_unityStatus,2)){
+        tts('桌面无法关闭哦');
+        nlg(\"PN_closeMap_AB_1\");
+    }elif(eqMethod(_unityStatus,3)){
+        tts('请先操作当前弹窗');
+        nlg(\"PN_popUp_AB_1\");
+    }elif(eqMethod(_unityStatus,4)){
+    }elif(eqMethod(_unityStatus,0)){
+        tts('好哒');
+        nlg(\"PN_control_samrtspace_xplay_close_1\");
+    }else{
+        tts('关闭失败');
+        nlg(\"PN_generalError_AB_2\");
+    }
+}else{
+    tts('要关闭的内容已经关了哦');
+    nlg(\"PN_pageAlreadyClosed\");
+}
+		"""
+    tpl = """
+    if(eqMethod(0,data('get.car.level'))){
+  tts('当前配置没有这个功能哦');
+  nlg("PN_unsupport_AB_1");
+  return;
+}
+var(_currentMode,data('combo.get.current.user.mode'));
+if(eqMethod('spacecapsule_mode_movie', _currentMode)){
+
+        if(data('is.unity.app.top','XPPlugin_SpaceCapsuleMainPageApp')){
+            var(app_name,'XPPlugin_SpaceCapsuleMainPageApp');
+        }else{
+           var(_appName,'XPPlugin_SpaceCapsuleApp');
+        }
+
+        var(_unityStatus,data('unity.app.close',param("{'app_name':'%1$s'}",_appName)));
+        if(eqMethod(_unityStatus,1)){
+            tts('要关闭的内容已经关了哦');
+            nlg("PN_pageAlreadyClosed");
+        }elif(eqMethod(_unityStatus,2)){
+            tts('桌面无法关闭哦');
+            nlg("PN_closeMap_AB_1");
+        }elif(eqMethod(_unityStatus,3)){
+            tts('请先操作当前弹窗');
+            nlg("PN_popUp_AB_1");
+        }elif(eqMethod(_unityStatus,4)){
+        }elif(eqMethod(_unityStatus,0)){
+            tts('好哒');
+            nlg("PN_control_samrtspace_xplay_close_1");
+        }else{
+            tts('关闭失败');
+            nlg("PN_generalError_AB_2");
+        }
+
+
+}else{
+ tts('要关闭的内容已经关了哦');
+ nlg("PN_pageAlreadyClosed");
+}
+"""
+    parse_code_condition(tpl)
+
+
 if __name__ == "__main__":
     # test_save_jsons_into_xlsx()
     # test_load_jsons_from_xlsx()
@@ -75,8 +155,9 @@ if __name__ == "__main__":
     # for cond in []:
     #     new_cond = TplItem.convert_cond_to_exact_info(cond, param_dct)
     #     print("convert {} to {}".format(cond, new_cond))
+    #
+    # js_path = "/Users/zhanzq/Downloads/tpl_js_0402"
+    # xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param_merged-0402.xlsx"
+    # revert_js_from_xlsx(js_path=js_path, xlsx_path=xlsx_path)
 
-    js_path = "/Users/zhanzq/Downloads/tpl_js_0402"
-    xlsx_path = "/Users/zhanzq/Downloads/intent_to_command_with_param_merged-0402.xlsx"
-    revert_js_from_xlsx(js_path=js_path, xlsx_path=xlsx_path)
-
+    test_parse_code_condition()

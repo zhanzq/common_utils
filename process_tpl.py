@@ -680,7 +680,7 @@ def process_nlg_id_info(car_type="E38", version="0420"):
 
 
 def main():
-    version = "0614"
+    version = "0617"
     process_nlg_id_info(car_type="E38", version=version)
 
 
