@@ -5,11 +5,12 @@
 # date  : 2022/3/4
 #
 import collections
-import re
-import sys
+import json
 
-from utils import *
-sys.path.append("/Users/zhanzq/github")
+from common_utils.text_io.excel import load_json_list_from_xlsx, save_json_list_into_xlsx
+from common_utils.text_io.txt import load_from_json, save_to_json, save_to_jsonl
+
+from common_utils.utils import *
 from antlr4_python.data_utils import get_tree, format_tree
 
 import traceback
@@ -22,7 +23,7 @@ class TPL(object):
 
     def __init__(self, tpl_xlsx_path, do_not_parse_perceptual=True):
         self.tpl_data_path = tpl_xlsx_path
-        self.tpl_dct = load_jsons_from_xlsx(xlsx_path=self.tpl_data_path)
+        self.tpl_dct = load_json_list_from_xlsx(xlsx_path=self.tpl_data_path)
         self.tts_dist = {}
         self.diff_tts_dist = {}
         self.tts_lst = []
@@ -45,16 +46,9 @@ class TPL(object):
         self.print_parse_info()
 
     def analysis_tpl_data(self, version, car_type="E38"):
-        multi_intent_cond_map = self.multi_intent_condition_mp
         all_tts_info = []
         for tpl_info in self.tpl_info_lst:
-            intent = tpl_info["intent"]
-            slot = tpl_info["slot"]
             for tts_info in tpl_info["tts_info_lst"]:
-                condition = tts_info["condition"]
-                is_single_tts = True
-                if multi_intent_cond_map[intent + slot + condition] > 1:
-                    is_single_tts = False
                 try:
                     all_tts_info.append({
                         "domain": tpl_info["domain"],
@@ -66,15 +60,10 @@ class TPL(object):
                         "判断条件语义信息": tts_info["判断条件语义信息"],
                         "未成功解析的判断条件": tts_info["未成功解析的判断条件"],
                         "exact_condition_lst": tts_info["exact_condition_lst"],
-                        # "params": tts_info["params"],
                         "nlg_md5": tts_info["nlg_md5"],
-                        # "tts_md5": tts_info["tts_md5"],
                         "nlg_id": tts_info["nlg_id"],
-                        # "tts_id": tts_info["tts_id"],
-                        # "is_single_tts": is_single_tts,
-                        # "first": tts_info["first"],
-                        "format": tpl_info.get("format"),
-                        # "data": tpl_info.get("data"),
+                        "tpl": tpl_info["tpl"],
+                        "formatted": True
                     })
                 except Exception as e:
                     print(e)
@@ -82,9 +71,9 @@ class TPL(object):
 
         print("total tts num: {}".format(len(all_tts_info)))
         tts_info_path = "/Users/zhanzq/Downloads/tts_info.xlsx"
-        save_jsons_into_xlsx(json_lst=all_tts_info, xlsx_path=tts_info_path,
-                             sheet_name="{}_{}".format(car_type, version))
-        tts_info_jsonl_path = "/Users/zhanzq/Downloads/tts_info_{}_{}.jsonl".format(car_type, version)
+        save_json_list_into_xlsx(json_lst=all_tts_info, xlsx_path=tts_info_path,
+                                 sheet_name="{}_{}_md5".format(car_type, version))
+        tts_info_jsonl_path = "/Users/zhanzq/Downloads/tts_info_md5_{}_{}.jsonl".format(car_type, version)
         save_to_jsonl(json_lst=all_tts_info, jsonl_path=tts_info_jsonl_path)
 
         return
@@ -138,21 +127,20 @@ class TPL(object):
 
         return bad_tokens
 
-    def update_parse_info(self, tpl_item, slot_info_dct=None, perceptual_data_dct=None):
-        domain = tpl_item.domain
-        intent = tpl_item.intent
-        slot = tpl_item.slot
+    def update_perceptual_data_st(self, tpl_item):
         data = tpl_item.data
-        tts_lst = tpl_item.tts_lst
+        self.data_lst.extend(data)
 
-        for tts_info in tpl_item.tts_info_lst:
-            intent_cond = intent + slot + tts_info["condition"]
-            exact_condition_lst = tts_info["exact_condition_lst"]
-            semantics, bad_conds = convert_condition_to_semantics(cond_lst=exact_condition_lst, cond_dct=perceptual_data_dct)
-            tts_info["判断条件语义信息"] = semantics
-            tts_info["未成功解析的判断条件"] = list(bad_conds) if bad_conds else None
-            self.bad_conds = self.bad_conds.union(bad_conds)
-            self.multi_intent_condition_mp[intent_cond] = self.multi_intent_condition_mp.get(intent_cond, 0) + 1
+    @staticmethod
+    def get_slot_info(slot, slot_info_dct):
+        slot_info = None
+        if slot_info_dct:
+            slot_info = slot_info_dct.get(slot, {}).get("semantics")
+
+        return slot_info
+
+    def update_parse_info(self, tpl_item):
+        tts_lst = tpl_item.tts_lst
 
         tts_num = len(tpl_item.tts_lst)
         self.tts_dist[tts_num] = self.tts_dist.get(tts_num, 0) + 1
@@ -162,22 +150,32 @@ class TPL(object):
         self.diff_tts_dist[diff_tts_num] = self.diff_tts_dist.get(diff_tts_num, 0) + 1
         self.diff_tts_lst_per_tpl.extend(diff_tts_lst)
         self.diff_tts_lst_all_tpl.extend(tts_lst)
-        self.data_lst.extend(data)
-        data_lst = list(data)
-        data_lst.sort()
-        slot_info = None
-        if slot != "default" and slot_info_dct:
-            slot_info = slot_info_dct.get(slot, {}).get("semantics")
         tpl_info = {
-            "domain": domain,
-            "intent": intent,
-            "slot": slot,
-            "槽位语义": slot_info,
-            "data": data_lst,
+            "domain": tpl_item.domain,
+            "intent": tpl_item.intent,
+            "slot": tpl_item.slot,
             "tts_info_lst": tpl_item.tts_info_lst,
-            "format": tpl_item.tpl,
+            "tpl": tpl_item.tpl,
         }
         self.tpl_info_lst.append(tpl_info)
+
+    @staticmethod
+    def get_condition_semantic(exact_cond_lst, cond_semantic_dct):
+        semantics, bad_cond_st = convert_condition_to_semantics(cond_lst=exact_cond_lst, cond_dct=cond_semantic_dct)
+
+        return semantics, bad_cond_st
+
+    def update_cond_semantics(self, tpl_item, cond_semantic_dct):
+        for tts_info in tpl_item.tts_info_lst:
+            exact_cond_lst = tts_info["exact_condition_lst"]
+            semantics, bad_cond_st = TPL.get_condition_semantic(exact_cond_lst=exact_cond_lst,
+                                                                cond_semantic_dct=cond_semantic_dct)
+            tts_info["判断条件语义信息"] = semantics
+            failed_cond_lst = list(bad_cond_st) if bad_cond_st else None
+            tts_info["未成功解析的判断条件"] = failed_cond_lst
+            self.bad_conds = self.bad_conds.union(bad_cond_st)
+
+        return
 
     def print_parse_info(self):
         tts_dist = list(self.tts_dist.items())
@@ -196,37 +194,32 @@ class TPL(object):
     def analysis_all_tpl_items(self, domain=None, car_type="E38", slot_info_dct=None, perceptual_data_dct=None):
         tpl_items = self.tpl_dct[car_type]
         for item in tpl_items:
-            tpl_item = TplItem(item, self.tts_map, self.nlg_id_map, self.tts_id_map)
-            # print("intent: {}, slot: {}".format(tpl_item.intent, tpl_item.slot))
+            tpl_item = TplItem(item)
             if domain is not None and domain != tpl_item.domain:
                 continue
-            self.update_parse_info(tpl_item, slot_info_dct=slot_info_dct, perceptual_data_dct=perceptual_data_dct)
-            self.tts_map = tpl_item.tts_map
-            self.tts_id_map = tpl_item.tts_id_map
-            self.nlg_id_map = tpl_item.nlg_id_map
+            self.update_cond_semantics(tpl_item=tpl_item, cond_semantic_dct=perceptual_data_dct)
+            self.update_parse_info(tpl_item)
+            self.tpl_info_lst[-1]["槽位语义"] = TPL.get_slot_info(slot=tpl_item.slot, slot_info_dct=slot_info_dct)
 
         self.diff_tts_lst_all_tpl = list(set(self.diff_tts_lst_all_tpl))
 
 
 class TplItem(object):
-    def __init__(self, tpl_item, tts_map={}, nlg_id_map={}, tts_id_map={}):
+    def __init__(self, tpl_item):
         self.intent = tpl_item.get("intent") or ""
-        self.slot = tpl_item.get("slot", tpl_item.get("param")) or "default"
-        self.tpl = tpl_item.get("antlr") or ""
+        self.slot = tpl_item.get("slot", tpl_item.get("param")) or ""
+        self.tpl = tpl_item.get("antlr", tpl_item.get("tpl")) or ""
         if "_" in self.intent:
             self.domain = self.intent.split("_")[0]
         else:
             self.domain = self.intent
 
-        self.tts_map = tts_map
-        self.nlg_id_map = nlg_id_map
-        self.tts_id_map = tts_id_map
         self.tts_lst = []
         self.tts_info_lst = []
         self.conditions = {}
         self.data = {}
 
-        self.parse_tpl_item()
+        self.process_tpl_item()
 
     def __str__(self):
         ret_obj = {
@@ -237,7 +230,7 @@ class TplItem(object):
             "conditions": self.conditions
         }
 
-        return str(ret_obj)
+        return json.dumps(ret_obj, ensure_ascii=False, indent=4)
 
     @staticmethod
     def get_param_dct(format_codes):
@@ -285,7 +278,6 @@ class TplItem(object):
         for cond_i in cond_lst:
             if cond_i in param_dct:
                 new_cond = cond.replace(cond_i, param_dct[cond_i])
-                # print("convert {} to {}".format(cond, new_cond))
                 cond = new_cond
 
         cond = TplItem.process_specific_condition(cond)
@@ -312,7 +304,6 @@ class TplItem(object):
                 new_item = item[4:]
                 if not TplItem.is_full(new_item):
                     new_item = new_item[:-1]
-                # print("convert {} to {}".format(item, new_item))
                 cond = cond.replace(item, new_item)
 
         return cond
@@ -323,7 +314,6 @@ class TplItem(object):
         lst = re.findall(ptn, cond)
         if lst:
             for item in lst:
-                # print("convert {} to {}".format(item, item[5:-1]))
                 cond = cond.replace(item, item[5:-1])
 
         return cond
@@ -335,7 +325,6 @@ class TplItem(object):
         if lst:
             for item in lst:
                 new_item = item[:12] + item[17:-1]
-                # print("convert {} to {}".format(item, new_item))
                 cond = cond.replace(item, new_item)
 
         return cond
@@ -348,20 +337,18 @@ class TplItem(object):
 
         return cond
 
-    def parse_tpl_item(self):
+    def process_tpl_item(self, format_code=True, insert_md5=True):
         """
-        parse single tpl record
+        process single tpl record, format code and insert nlg_md5
         """
-        try:
-            self.tpl = format_tree(get_tree(self.tpl), -1)
-            self.data = self.get_perception_data()
-            self.conditions = self.get_conditions()
+        if format_code:
+            tree, errors = get_tree(self.tpl)
+            if errors:
+                print("intent: {}, parsing errors:\n{}".format(self.intent, errors))
+            self.tpl = format_tree(tree, -1)
+
+        if insert_md5:
             self.insert_nlg_md5()
-            if len(self.tts_lst) == 0:
-                print(self)
-        except Exception as e:
-            print("intent: {}".format(self.intent))
-            print(traceback.print_exc())
 
         return
 
@@ -397,31 +384,6 @@ class TplItem(object):
 
         return dict(collections.Counter(conditions).most_common())
 
-    def get_tts_info(self, tts, condition):
-        nlg_md5 = gen_id(self.intent + self.slot + condition, len_id=32)
-        if nlg_md5 not in self.nlg_id_map:
-            self.nlg_id_map[nlg_md5] = "{}_N_{}".format(self.domain, len(self.nlg_id_map) + 1001)
-
-        nlg_id = self.nlg_id_map[nlg_md5]
-        tts_md5 = self.tts_map.get(tts, nlg_md5)
-        if tts_md5 == nlg_md5:
-            self.tts_map[tts] = tts_md5
-            self.tts_id_map[tts_md5] = nlg_id
-        tts_id = self.tts_id_map[tts_md5]
-
-        tts_info = {
-            "tts": tts,
-            "nlg_id": nlg_id,
-            "tts_id": tts_id,
-            "nlg_md5": nlg_md5,
-            "tts_md5": tts_md5,
-            "condition": condition,
-            "params": TplItem.get_params(tts),
-            "first": tts_id == nlg_id,
-        }
-
-        return tts_info
-
     def get_tts_info_v2(self, tts, condition):
         nlg_md5 = gen_id(self.intent + self.slot + condition, len_id=32)
 
@@ -434,7 +396,21 @@ class TplItem(object):
 
         return tts_info
 
-    def insert_nlg_md5_v2(self):
+    @staticmethod
+    def get_next_nlg_id(code_lines, i):
+        for line in code_lines[i:]:
+            if line.strip().startswith("}"):
+                return None
+            else:
+                lst = re.findall("nlg\([\"'](.*?)[\"']", line)
+                if lst:
+                    nlg_id = lst[0]
+                    return nlg_id
+
+        return None
+
+    def insert_nlg_md5(self):
+        self.tpl = self.tpl.replace("\t", "    ")
         add_tpl_lines = []
         condition_stk = []
         param_dct = {}
@@ -459,53 +435,13 @@ class TplItem(object):
                 tts_info["exact_condition_lst"] = exact_condition_lst
                 self.tts_lst.append(tts)
                 add_tpl_lines.append(line)
-                nxt_line = None
-                if i < len(code_lines) - 1:
-                    nxt_line = code_lines[i+1].strip()
-                if not nxt_line or not nxt_line.startswith("nlg("):
+                nlg_id = TplItem.get_next_nlg_id(code_lines, i+1)
+                if not nlg_id:
                     add_tpl_lines.append('{}nlg("{}");'.format(leading_spaces, tts_info["nlg_md5"]))
                     tts_info["nlg_id"] = None
                 else:
-                    tts_info["nlg_id"] = re.findall("nlg\(\"(.*)\"\)", nxt_line)[0]
+                    tts_info["nlg_id"] = nlg_id
                 self.tts_info_lst.append(tts_info)
-            else:
-                add_tpl_lines.append(line)
-
-        self.tpl = "\n".join(add_tpl_lines)
-        return
-
-    def insert_nlg_md5(self):
-        add_tpl_lines = []
-        condition_stk = []
-        param_dct = {}
-        code_lines = self.tpl.split("\n")
-        for i, line in enumerate(code_lines):
-            update_condition(line, condition_stk)
-            TplItem.update_param_dct(param_dct, line)
-            if line.lstrip().startswith("tts("):
-                tts_level = get_indent_level(line)
-                while len(condition_stk) > tts_level:
-                    condition_stk.pop()
-
-                leading_spaces = " " * (len(line) - len(line.lstrip()))
-                condition_lst = [item[-1][1] for item in condition_stk]
-                condition = " and ".join(condition_lst)
-                # exact_condition_lst = [TplItem.convert_cond_to_exact_info(cond, param_dct) for cond in condition_lst]
-                if condition:
-                    exact_condition_lst = [TplItem.convert_cond_to_exact_info(cond, param_dct) for cond in condition.split(" and ")]
-                else:
-                    exact_condition_lst = []
-                tts = line.strip()
-                tts_info = self.get_tts_info(tts, condition)
-                tts_info["exact_condition_lst"] = exact_condition_lst
-                self.tts_lst.append(tts)
-                self.tts_info_lst.append(tts_info)
-                add_tpl_lines.append(line)
-                nxt_line = None
-                if i < len(code_lines) - 1:
-                    nxt_line = code_lines[i+1].strip()
-                if nxt_line and not nxt_line.startswith("nlg("):
-                    add_tpl_lines.append('{}nlg("{}");'.format(leading_spaces, tts_info["nlg_md5"]))
             else:
                 add_tpl_lines.append(line)
 
@@ -524,11 +460,19 @@ class TplItem(object):
                         print("intent: {}, line: {:3d}, bad tts format: {}".format(self.intent, i+1, line))
                         continue
                     else:
+                        for idx, param_i in enumerate(params):
+                            if "data(" in param_i:
+                                perceptual_name = re.findall("\w+\.[\w\.]+", param_i)[0]
+                                perceptual_name = "_" + perceptual_name.replace(".", "_")
+                                leading_whitespace_num = len(line) - len(line.lstrip())
+                                add_line = "var({},{});".format(perceptual_name, param_i)
+                                out_lines[i] += "\n" + " " * leading_whitespace_num + add_line
+                                params[idx] = perceptual_name
+
                         if len(params) == 1:
                             param = "{'nlg_target': '%s'}" % params[0]
                         elif len(params) == 2:
-                            import pdb
-                            pdb.set_trace()
+                            print("two params: {}".format(line))
                             param = "{'nlg_source': '%s', 'nlg_target': '%s'}" % (params[0], params[1])
                         else:
                             print("intent: {}, line: {:3d}, bad tts format: {}".format(self.intent, i+1, line))
@@ -544,7 +488,7 @@ class TplItem(object):
                         if param in out_lines[i+1]:
                             continue
                         else:
-                            out_lines[i+1] = out_lines[i+1].replace(");", ", \"%s\");" % param)
+                            out_lines[i+1] = out_lines[i+1].replace(");", ', "{}");'.format(param))
 
         self.tpl = "\n".join(out_lines)
         return
@@ -566,7 +510,7 @@ def process_slot_info():
     slot_info_path = "/Users/zhanzq/Downloads/slot_info.xlsx"
 
     sheet_name = "产品待确认的槽位语义信息_0331"
-    slot_info_lst = load_jsons_from_xlsx_v2(xlsx_path=slot_info_path, sheet_name=sheet_name)[sheet_name]
+    slot_info_lst = load_json_list_from_xlsx(xlsx_path=slot_info_path, sheet_name=sheet_name)[sheet_name]
 
     slot_info_dct = {}
     for slot_info in slot_info_lst:
@@ -650,7 +594,6 @@ def convert_or_cond_to_semantics(cond_lst, cond_dct):
     bad_conds = set()
     for i, cond in enumerate(cond_lst):
         if cond not in cond_dct:
-#             print("condition {} not found".format(cond))
             bad_conds.add(cond)
         else:
             res.append("{}".format(cond_dct[cond]))
@@ -663,7 +606,6 @@ def convert_and_cond_to_semantics(cond_lst, cond_dct):
     bad_conds = set()
     for i, cond in enumerate(cond_lst):
         if cond not in cond_dct:
-#             print("condition {} not found".format(cond))
             bad_conds.add(cond)
         else:
             res.append("{}".format(cond_dct[cond]))
@@ -677,7 +619,6 @@ def convert_notor_cond_to_semantics(cond_lst, cond_dct):
     for i, cond in enumerate(cond_lst):
         cond = "not " + cond
         if cond not in cond_dct:
-#             print("condition {} not found".format(cond))
             bad_conds.add(cond)
         else:
             res.append("{}".format(cond_dct[cond]))
@@ -691,7 +632,6 @@ def convert_notand_cond_to_semantics(cond_lst, cond_dct):
     for i, cond in enumerate(cond_lst):
         cond = "not " + cond
         if cond not in cond_dct:
-#             print("condition {} not found".format(cond))
             bad_conds.add(cond)
         else:
             res.append("{}".format(cond_dct[cond]))
@@ -836,13 +776,6 @@ def get_cmp_method(item):
     res = {}
     # rule1: entity + prop + action + ret_dct[key]
     for key, val in ret_dct.items():
-        #         try:
-        #             val = eval(str(val))
-        #         except:
-        #             traceback.print_exc()
-        #         if type(val) is not int and type(val) is not float:
-        #             continue
-        #         else:
         val_s = entity + prop + "{}" + str(val) + unit
         key_s = "(data('{}'),'{}')".format(name, key)
         res.update(_cmp_method(key_s, val_s))
@@ -1086,7 +1019,7 @@ def get_from_unity(unity_info_path=None):
     if not unity_info_path:
         unity_info_path = "/Users/zhanzq/Downloads/unity.xlsx"
 
-    json_lst = load_jsons_from_xlsx_v2(xlsx_path=unity_info_path, sheet_name="Sheet1")["Sheet1"]
+    json_lst = load_json_list_from_xlsx(xlsx_path=unity_info_path, sheet_name="Sheet1")["Sheet1"]
     res = {}
     for item in json_lst:
         key, val = item["未成功解析的判断条件"], item["语义"]
@@ -1100,7 +1033,7 @@ def get_from_adjust_info(perceptual_data_path=None):
     if not perceptual_data_path:
         perceptual_data_path = "/Users/zhanzq/Downloads/感知点汇总.xlsx"
     sheet_name = "感知点汇总表"
-    perceptual_data_lst = load_jsons_from_xlsx_v2(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
+    perceptual_data_lst = load_json_list_from_xlsx(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
     res = {}
     for item1 in perceptual_data_lst:
         key1 = item1["感知点"]
@@ -1146,10 +1079,8 @@ def parse_perceptual_item(item):
 
 def parse_perceptual_data(perceptual_data_path):
     sheet_name = "感知点汇总表"
-    perceptual_data_lst = load_jsons_from_xlsx_v2(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
+    perceptual_data_lst = load_json_list_from_xlsx(xlsx_path=perceptual_data_path, sheet_name=sheet_name)[sheet_name]
     print("total perceptual data: {}".format(len(perceptual_data_lst)))
-    #     for item in perceptual_data_lst:
-    #         print((item["感知点"] or "") + ": " + (item["领域"] or ""))
 
     perceptual_data_dct = get_from_predefine_slot_info()
     perceptual_data_dct.update(get_from_manual_create())    # manual created by zhengyi and yuhan
@@ -1161,8 +1092,6 @@ def parse_perceptual_data(perceptual_data_path):
 
     keys = list(perceptual_data_dct.keys())
     for key in keys:
-        #         new_key = key.replace("'", "\\'")
-        #         new_key = new_key.replace("\"", "\\'")
         new_key = key.replace("\"", "'")
         perceptual_data_dct[new_key] = perceptual_data_dct[key]
 
