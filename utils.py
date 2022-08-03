@@ -16,6 +16,22 @@ import hashlib
 import subprocess
 
 
+def get_version(version_format="%m%d"):
+    """
+    根据日期格式返回当前日期对应的版本号
+    :param version_format:
+        %Y  Year with century as a decimal number.
+        %m  Month as a decimal number [01,12].
+        %d  Day of the month as a decimal number [01,31].
+        %H  Hour (24-hour clock) as a decimal number [00,23].
+        %M  Minute as a decimal number [00,59].
+        %S  Second as a decimal number [00,61].
+    :return:
+    """
+
+    return time.strftime(version_format)
+
+
 def gen_id(string, len_id=8):
     md5 = hashlib.md5()
     md5.update(string.encode())
