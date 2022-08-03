@@ -153,6 +153,8 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
         if overwrite:
             wb.remove(sheet)
             sheet = wb.create_sheet(title=sheet_name)
+        else:
+            return
     else:
         sheet = wb.create_sheet(title=sheet_name)
 
@@ -204,6 +206,16 @@ def save_json_list_into_xlsx(json_lst, xlsx_path, col_name_lst=None, sheet_name:
         wb.save(xlsx_path)
 
 
+def is_empty_record(item):
+    has_valid_val = False
+    for key, val in item.items():
+        if val:
+            has_valid_val = True
+            break
+
+    return not has_valid_val
+
+
 def load_json_list_from_sheet(sheet):
     """
     read data from sheet of xlsx file, and format it in json list
@@ -229,7 +241,8 @@ def load_json_list_from_sheet(sheet):
     out_lst = []
     for item in json_lst:
         obj = {key: val for key, val in zip(col_names, item) if key}
-        out_lst.append(obj)
+        if not is_empty_record(obj):
+            out_lst.append(obj)
 
     return out_lst
 
@@ -275,13 +288,13 @@ def check_title(xlsx_path, necessary_titles, sheet_names=None):
     :param sheet_names: the sheets to check
     :return:
     """
+    valid = True
     try:
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         json_dct = {}
         if not sheet_names:
             sheet_names = wb.sheetnames
 
-        valid = True
         for sheet_name in sheet_names:
             sheet = wb[sheet_name]
 
