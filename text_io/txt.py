@@ -197,6 +197,38 @@ def clean_json_obj(json_obj):
     return json_obj
 
 
+def clean_null_vals_in_json_obj(json_obj):
+    """
+    clean the null values in json_obj, e.g. ["a", "", None] ==> ["a"]
+    :param json_obj: the input json to clean
+    :return:
+    """
+    if not isinstance(json_obj, dict):
+        return json_obj
+    elif not has_valid_value(json_obj):
+        return {}
+
+    keys = list(json_obj.keys())
+    for key in keys:
+        val = json_obj[key]
+        if val is None:
+            json_obj.pop(key)
+        elif isinstance(val, dict):
+            tmp_dct = clean_null_vals_in_json_obj(val)
+            if not has_valid_value(tmp_dct):
+                json_obj[key] = {}
+            else:
+                json_obj[key] = tmp_dct
+        elif isinstance(val, list):
+            lst = [clean_null_vals_in_json_obj(it) for it in val]
+            lst = [it for it in lst if it]
+            if not has_valid_value(lst):
+                json_obj[key] = []
+            else:
+                json_obj[key] = lst
+    return json_obj
+
+
 def fold_json_obj(json_obj: dict) -> dict:
     """
     fold a flat json object, e.g. {"a.b": 10} ==> {"a": {"b": 10}}
@@ -207,6 +239,8 @@ def fold_json_obj(json_obj: dict) -> dict:
     for key, val in json_obj.items():
         if val and isinstance(val, str) and val[0] == '"' and val[-1] == '"':
             val = val[1:-1]
+        elif isinstance(val, type):
+            val = val.__name__
         domains = key.split(".")
         _update_json_obj_by_var_path(out_obj, domains, val)
 

@@ -8,6 +8,7 @@
 import os
 import openpyxl
 from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from common_utils.utils import time_cost
@@ -16,6 +17,24 @@ from common_utils.utils import time_cost
 def _set_auto_filter(sheet):
     full_range = "A1:" + get_column_letter(sheet.max_column) + str(sheet.max_row)
     sheet.auto_filter.ref = full_range
+
+
+def _set_title_format(sheet, size=14, bold=True, color="000000"):
+    """
+    set title format as bold black font with larger size than default
+    :param size: default 14, larger than the default value 12
+    :param bold: default True
+    :param color: default black
+    :return:
+    """
+    font = Font(name="宋体", size=size, bold=bold, color=color)
+    light_green = PatternFill(fill_type='solid', fgColor="55DD55")
+    light_blue = PatternFill(fill_type="solid", fgColor="5b94ed")
+    for row in sheet.rows:
+        for cell in row:
+            cell.font = font
+            cell.fill = light_blue
+        return
 
 
 def _set_adaptive_column_width(sheet):
@@ -30,13 +49,14 @@ def _set_adaptive_column_width(sheet):
     for col in sheet.columns:
         # 每行
         for j in range(len(col)):
+            width = len(str(col[j].value).encode("gbk"))
             if j == 0:
                 # 数组增加一个元素
-                col_width.append(len(str(col[j].value)))
+                col_width.append(width)
             else:
                 # 获得每列中的内容的最大宽度
-                if col_width[i] < len(str(col[j].value)):
-                    col_width[i] = len(str(col[j].value))
+                if col_width[i] < width:
+                    col_width[i] = width
         i = i + 1
 
     # 设置列宽
@@ -49,6 +69,8 @@ def _set_adaptive_column_width(sheet):
         # 只有当宽度大于10，才设置列宽
         elif col_width[i] > 10:
             sheet.column_dimensions[col_letter].width = col_width[i] + 2
+        else:
+            sheet.column_dimensions[col_letter].width = 10
 
 
 def _eval_cell(val):
@@ -178,6 +200,7 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
         _set_auto_filter(sheet)
 
     _set_adaptive_column_width(sheet)
+    _set_title_format(sheet)
 
 
 @time_cost
@@ -308,7 +331,7 @@ def check_title(xlsx_path, necessary_titles, sheet_names=None):
                 if title not in col_names:
                     print("sheet: {} has no title: {}".format(sheet_name, title))
                     valid = False
-    except e:
+    except Exception as e:
         print(e)
     finally:
         return valid
@@ -317,6 +340,8 @@ def check_title(xlsx_path, necessary_titles, sheet_names=None):
 def _test():
     xlsx_path = "../test.xlsx"
     json_dct = load_json_list_from_xlsx(xlsx_path=xlsx_path)
+    for sheet_name, json_lst in json_dct.items():
+        save_json_list_into_xlsx(xlsx_path=xlsx_path, sheet_name=sheet_name, json_lst=json_lst)
     print(json_dct.keys())
 
 
