@@ -19,7 +19,7 @@ def get_edit_path(dp, pre_len=0, pst_len=0):
     :return:
     """
     i = len(dp) - 1
-    j = len(dp[1]) - 1
+    j = len(dp[0]) - 1
 
     edit_path = ""
     while i > 0 or j > 0:
@@ -136,16 +136,23 @@ def get_edit_distance_matrix_with_pre_pst(source, target):
     while i < sz1 and i < sz2:
         if source[i] == target[i]:
             pre_len += 1
+            i += 1
         else:
             break
     j = 1
     while j <= sz1 and j <= sz2:
         if source[-j] == target[-j]:
             pst_len += 1
+            j += 1
         else:
             break
 
-    source1, target1 = source[pre_len:-pst_len], target[pre_len:-pst_len]
+    if pst_len == sz1 and sz1 == sz2:
+        pst_len = 0
+    if pst_len == 0:
+        source1, target1 = source[pre_len:], target[pre_len:]
+    else:
+        source1, target1 = source[pre_len:-pst_len], target[pre_len:-pst_len]
     sz1, sz2 = len(source1), len(target1)
 
     dp = [[0 for _ in range(sz2 + 1)] for _ in range(sz1 + 1)]

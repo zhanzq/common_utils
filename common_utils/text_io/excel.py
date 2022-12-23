@@ -49,7 +49,7 @@ def _set_adaptive_column_width(sheet):
     for col in sheet.columns:
         # 每行
         for j in range(len(col)):
-            width = len(str(col[j].value).encode("gbk"))
+            width = len(str(col[j].value).encode("utf-8"))
             if j == 0:
                 # 数组增加一个元素
                 col_width.append(width)
@@ -174,11 +174,11 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
         sheet = wb[sheet_name]
         if overwrite:
             wb.remove(sheet)
-            sheet = wb.create_sheet(title=sheet_name)
+            sheet = wb.create_sheet(title=sheet_name, index=0)
         else:
             return
     else:
-        sheet = wb.create_sheet(title=sheet_name)
+        sheet = wb.create_sheet(title=sheet_name, index=0)
 
     # write first line with col_names
     for j, col_name in enumerate(col_name_lst):
