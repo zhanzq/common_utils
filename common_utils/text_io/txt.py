@@ -13,14 +13,15 @@ import copy
 
 
 @time_cost
-def save_to_jsonl(json_lst: list, jsonl_path: str):
+def save_to_jsonl(json_lst: list, jsonl_path: str, encoding: str='utf8'):
     """
     save json list into file, each line contains a dumped json object
     :param json_lst: list of json object
     :param jsonl_path: file path to store json objects, usually endswith ".jsonl"
+    :param encoding: data encoding, default 'utf8'
     :return:
     """
-    with open(jsonl_path, "w") as writer:
+    with open(jsonl_path, "w", encoding=encoding) as writer:
         for json_obj in json_lst:
             json_obj = {key: val for key, val in json_obj.items() if key or val}
             try:
@@ -30,14 +31,15 @@ def save_to_jsonl(json_lst: list, jsonl_path: str):
 
 
 @time_cost
-def load_from_jsonl(jsonl_path: str):
+def load_from_jsonl(jsonl_path: str, encoding: str='utf8'):
     """
     load json list from file, each line contains a dumped json object
     :param jsonl_path: type: str, file path storing json objects, usually endswith ".jsonl"
+    :param encoding: data encoding, default 'utf8'
     :return: json object list
     """
     json_lst = []
-    with open(jsonl_path, "r") as reader:
+    with open(jsonl_path, "r", encoding=encoding) as reader:
         for line in reader:
             try:
                 json_obj = json.loads(line)
@@ -49,14 +51,15 @@ def load_from_jsonl(jsonl_path: str):
 
 
 @time_cost
-def save_to_json(json_obj: dict, json_path: str):
+def save_to_json(json_obj: dict, json_path: str, encoding: str='utf8'):
     """
     save json object into file
     :param json_obj: json object to store
     :param json_path: file path to store json object, usually endswith ".json"
+    :param encoding: data encoding, default 'utf8'
     :return:
     """
-    with open(json_path, "w") as writer:
+    with open(json_path, "w", encoding=encoding) as writer:
         try:
             print("save {} records into json file".format(len(json_obj)))
             json.dump(json_obj, writer, ensure_ascii=False, indent=4)
@@ -65,17 +68,18 @@ def save_to_json(json_obj: dict, json_path: str):
 
 
 @time_cost
-def load_from_json(json_path: str):
+def load_from_json(json_path: str, encoding: str='utf8'):
     """
     load json object from file
     :param json_path: type: str, file path storing json objects, usually endswith ".jsonl"
+    :param encoding: data encoding, default 'utf8'
     :return: json object
     """
     json_obj = None
     if not os.path.exists(json_path):
         return None
 
-    with open(json_path, "r") as reader:
+    with open(json_path, "r", encoding=encoding) as reader:
         try:
             json_obj = json.load(reader)
         except Exception as e:
@@ -84,14 +88,15 @@ def load_from_json(json_path: str):
     return json_obj
 
 
-def save_to_tsv(json_lst: list, tsv_path: str):
+def save_to_tsv(json_lst: list, tsv_path: str, encoding: str='utf8'):
     """
     save json list into file, each line contains a dumped json object
     :param json_lst: list of json object
     :param tsv_path: file path to store json objects, usually endswith ".tsv"
+    :param encoding: data encoding, default 'utf8'
     :return:
     """
-    with open(tsv_path, "w") as writer:
+    with open(tsv_path, "w", encoding=encoding) as writer:
         col_name_lst = [it for it in json_lst[0].keys()]
         writer.write("\t".join(col_name_lst) + "\n")
         for json_obj in json_lst:
@@ -102,14 +107,15 @@ def save_to_tsv(json_lst: list, tsv_path: str):
                 print(e)
 
 
-def load_from_tsv(tsv_path: str):
+def load_from_tsv(tsv_path: str, encoding: str='utf8'):
     """
     load json list from file, each line contains a dumped json object
     :param tsv_path: type: str, file path storing json objects, usually endswith ".tsv"
+    :param encoding: data encoding, default 'utf8'
     :return: json object list
     """
     json_lst = []
-    with open(tsv_path, "r") as reader:
+    with open(tsv_path, "r", encoding=encoding) as reader:
         col_name_lst = reader.readline().strip().split("\t")
         for line in reader:
             try:
