@@ -13,7 +13,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="common_utils",
-    version="1.2.0",
+    version="1.2.1",
     author="zhanzq",
     author_email="zhanzhiqiang09@126.com",
     description="common utils",
