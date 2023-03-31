@@ -215,6 +215,34 @@ def parse_nlu_info_from_log(child_semantics):
     return nlu_info
 
 
+def get_log_trace_info_from_log(sn, env="test", date=None):
+    """
+    获取dialog-system:LogTrace服务的结果
+    :param sn: 请求的sn号
+    :param env: 请求的执行环境, default="test"
+    :param date: 日志写入时间，格式为"%Y%m%d"，如"20230308"
+    """
+    log_id_map = get_log_id(sn, env, date)
+    if not date:
+        date = get_version("%Y%m%d")
+    elif "-" in date:
+        date = date.replace("-", "")
+    service_name = "dialog-system:LogTrace"
+
+    service_info = get_service_info(sn, log_id_map, service_name, env, date)
+    data = service_info.get("data", {})
+    # req = json.loads(data["reqBody"]) if "reqBody" in data else None
+    # param = data.get("reqParam", None)
+    resp = json.loads(data["response"]) if "response" in data else None
+
+    log_trace_info = json.dumps(resp, ensure_ascii=False, indent=4)
+    log_trace_info = log_trace_info.replace("\\r", "\r")
+    log_trace_info = log_trace_info.replace("\\n", "\n")
+    log_trace_info = log_trace_info.replace("\\t", "\t")
+
+    return log_trace_info
+
+
 def get_do_nlu_info_from_log(sn, env="test", date=None):
     """
     获取dialog-system:doNlu服务的结果
@@ -256,6 +284,11 @@ def main():
 
     tpl_info = get_tpl_match_result(sn, env, date)
     print(f"template match info: \n{tpl_info}\n")
+
+    sn = "20230331094735474000555008"
+    date = "2023-03-31"
+    log_trace_info = get_log_trace_info_from_log(sn, "service", date)
+    print(f"log trace info: \n{log_trace_info}")
     return
 
 
