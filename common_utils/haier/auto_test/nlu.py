@@ -9,11 +9,12 @@ import json
 import requests
 
 
-def get_nlu_service_response(query, env="local"):
+def get_nlu_service_response(query, env="local", device="X20"):
     """
     在特定环境中获取nlu的执行结果
     :param query: 输入语句
     :param env: 测试环境，local:开发, test:验收, sim:仿真, service:生产, 默认为本地开发环境
+    :param device: 主控设备，即语音入口
     :return: dict, dm service处理结果
     """
     url = {
@@ -24,7 +25,7 @@ def get_nlu_service_response(query, env="local"):
     }[env]
 
     payload = json.dumps({
-        "channel": "X20",
+        "channel": device,
         "nickNameTable": {
             "deviceNickName": {
                 "gateway": "(智能网关五百三十一f|智能网关531f)"
@@ -73,11 +74,12 @@ def parse_nlu_response(json_resp):
     return nlu_info
 
 
-def get_dm_service_response(query, env="service"):
+def get_dm_service_response(query, env="service", device="X20"):
     """
     在特定环境中获取dm的执行结果
     :param query: 输入语句
     :param env: 测试环境，test:验收, sim:仿真, service:生产, 默认为生产环境
+    :param device: 主控设备，即语音入口
     :return: dict, dm service处理结果
     """
     url = {
@@ -85,35 +87,29 @@ def get_dm_service_response(query, env="service"):
         "sim": "https://aisim.haiersmarthomes.com/dialog-system/v2/dialog",
         "service": "https://aiservice.haier.net/dialog-system/v2/dialog"
     }[env]
-    payload = json.dumps({
-        "deviceType": "X20",
-        "applyChannel": "X20",
-        "dotId": "BOX0000412313123",
-        "masterDeviceId": "C8631420033333123123",
-        "clientId": "C8631420033333123123",
-        "token": "cb94786ec5414d068d78612c9aa6a061",
-        "familyId": "279193340561000000",
-        "otherParams": {
-            "neednlp": "yes",
-            "rewakeStat": "",
-            "multiDialog": "no",
-            "specialNlp2": "yes",
-            "nlpmodel": "X20",
-            "nlpType": "X20",
-            "addQuestion": False,
-            "needcontent": True,
-            "isQuitMultContinueDialog": "no",
-            "screenState1": "zhinengchuanda_photo",
-            "runStatus": "",
-            "isMultiContinueDialog": "no",
-            "deviceActionCategory2": "Regex",
-            "agcKey": False,
-            "simulation": True,
-            "forwardPass": False
-        },
-        "userInput": query,
-        "userId": "10052057871212211121"
-    })
+    payload = json.dumps(
+        {
+            "deviceType": device,
+            "userId": "3452436347",
+            "userInput": query,
+            "otherParams": {
+                "simulation": False,
+                "neednlp": "yes",
+                "rewakeStat": "",
+                "multiDialog": "no",
+                "specialNlp2": "yes",
+                "screenState": "",
+                "addQuestion": False,
+                "needcontent": True,
+                "isQuitMultContinueDialog": "no",
+                "runStatus": "",
+                "isMultiContinueDialog": "no",
+                "agcKey": False,
+                "forwardPass": False
+            },
+            "masterDeviceId": "BOX00002123sd1111"
+        }
+    )
     headers = {
         'Content-Type': 'application/json'
     }

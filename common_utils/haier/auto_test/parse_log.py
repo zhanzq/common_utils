@@ -131,7 +131,7 @@ def rm_internal_command(semantics):
     """
     filtered = []
     for semantic in semantics:
-        if semantic["domain"] != "InternalCommand":
+        if "domain" in semantic and semantic["domain"] != "InternalCommand":
             filtered.append(semantic)
 
     return filtered
@@ -145,7 +145,7 @@ def rm_extract_domain(nlu_info):
     """
     filtered = []
     for it in nlu_info:
-        if not it["domain"].startswith("Extract"):
+        if "domain" in it and it["domain"] and not it["domain"].startswith("Extract"):
             filtered.append(it)
 
     return filtered
