@@ -7,13 +7,14 @@
 
 
 import setuptools
+from common_utils.version import __version__
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="common_utils",
-    version="1.2.2",
+    version=__version__,
     author="zhanzq",
     author_email="zhanzhiqiang09@126.com",
     description="common utils",
