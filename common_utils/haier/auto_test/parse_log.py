@@ -58,7 +58,7 @@ def get_log_id(sn, env="test"):
             log_id_map = _parse_log_id(log_id_ret)
             return log_id_map
         except TypeError:
-            time.sleep(2)
+            time.sleep(5)
 
     return {}
 
