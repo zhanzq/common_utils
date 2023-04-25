@@ -63,6 +63,51 @@ def get_log_id(sn, env="test"):
     return {}
 
 
+def parse_nlu_receiver_info_from_log(resp_nlu_receiver):
+    # multi_media_semantics = resp_nlu_receiver.get("multiMediaResult").get("semantics")[0]
+    model_nlu_semantics = resp_nlu_receiver.get("modelNluResult").get("semantics")[0]
+    # ccg_semantics = resp_nlu_receiver.get("ccgNluResult").get("semantics")[0]
+    tpl_nlu_semantics = resp_nlu_receiver.get("templateNluResult").get("semantics")[0]
+    nlu_receiver_info = {
+        # "multi_media": [parse_nlu_info_from_log(it) for it in multi_media_semantics.get("childSemantics", [])],
+        "model_nlu": [parse_nlu_info_from_log(it) for it in model_nlu_semantics.get("childSemantics", [])],
+        # "ccg": [parse_nlu_info_from_log(it) for it in ccg_semantics.get("childSemantics", [])],
+        "tpl_nlu": [parse_nlu_info_from_log(it) for it in tpl_nlu_semantics.get("childSemantics", [])],
+    }
+
+    return nlu_receiver_info
+
+
+def get_nlu_receiver_info_from_log(sn, env="test"):
+    """
+        获取dialog-system:NluReceiver服务的结果
+        :param sn: 请求的sn号
+        :param env: 请求的执行环境, default="test"
+        """
+    print(format_string(f"nlu receiver info: env={env}, sn={sn}"))
+    log_id_map = get_log_id(sn, env)
+    service_name = "dialog-system:NluReceiver"
+
+    service_info = get_service_info(sn, log_id_map, service_name, env)
+    data = service_info.get("data", {})
+    # req = json.loads(data["reqBody"]) if "reqBody" in data else None
+    # param = data.get("reqParam", None)
+    resp = json.loads(data["response"]) if "response" in data else None
+    resp = resp.get("resp", {})
+    nlu_receiver_info = parse_nlu_receiver_info_from_log(resp_nlu_receiver=resp)
+
+    # filter unimportant semantics
+    for key in nlu_receiver_info:
+        nlu_receiver_info[key] = rm_extract_domain(nlu_receiver_info[key])
+        nlu_receiver_info[key] = rm_internal_command(nlu_receiver_info[key])
+
+    if nlu_receiver_info:
+        nlu_receiver_info = json.dumps(nlu_receiver_info, indent=4, ensure_ascii=False)
+    print(nlu_receiver_info)
+
+    return nlu_receiver_info
+
+
 def get_service_info(sn, log_id_map, service_name, env="test"):
     """
     获取具体服务的结果信息
@@ -272,6 +317,8 @@ def get_do_nlu_info_from_log(sn, env="test"):
 def main():
     env = "test"
     sn = "t20230425170334806661466624"
+    get_nlu_receiver_info_from_log(sn, env)
+
     get_do_nlu_info_from_log(sn, env)
 
     get_tpl_match_result(sn, env)
