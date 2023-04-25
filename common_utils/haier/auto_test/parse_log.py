@@ -6,9 +6,10 @@
 #
 
 
+import time
 import json
 import requests
-from common_utils.utils import get_version
+from common_utils.utils import format_string
 
 
 # 解析日志信息
@@ -30,59 +31,58 @@ def _parse_log_id(log_id_ret):
     return log_id_map
 
 
-def get_log_id(sn, env="test", date=None):
+def get_log_id(sn, env="test"):
     """
     获取日志id信息
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
-    :param date: 服务日志写入时间, 格式为"%Y%m%d",如"2023-03-08"
     :return: dict()
     """
-    if not date:
-        date = get_version("%Y-%m-%d")
+    # date: 服务日志写入时间, 格式为"%Y%m%d",如"2023-03-08"
+    date = f"{sn[1:5]}-{sn[5:7]}-{sn[7:9]}"
     if env == "test":
-        url = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getlogList?" + \
-              f"startDate={date}+00:00&accept={sn}&pageNum=1&pageSize=30"
+        url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getlogList"
     elif env == "sim":
-        url = "https://aisim.haiersmarthomes.com/bomp-logdata-adapter/datalog/getlogList?" + \
-              f"startDate=2023-03-02+00:00&accept={sn}&pageNum=1&pageSize=30"
+        url_base = "https://aisim.haiersmarthomes.com/bomp-logdata-adapter/datalog/getlogList"
     else:
-        url = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getlogList?" + \
-              f"startDate=2023-03-02+00:00&accept={sn}&pageNum=1&pageSize=30"
+        url_base = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getlogList"
+
+    url = url_base + f"?startDate={date}+00:00&accept={sn}&pageNum=1&pageSize=30"
     payload = {}
     headers = {}
 
-    response = requests.request("GET", url, headers=headers, data=payload)
-    log_id_ret = json.loads(response.text)
+    for _ in range(10):
+        try:
+            response = requests.request("GET", url, headers=headers, data=payload)
+            log_id_ret = json.loads(response.text)
+            log_id_map = _parse_log_id(log_id_ret)
+            return log_id_map
+        except TypeError:
+            time.sleep(2)
 
-    log_id_map = _parse_log_id(log_id_ret)
-
-    return log_id_map
+    return {}
 
 
-def get_service_info(sn, log_id_map, service_name, env="test", date=None):
+def get_service_info(sn, log_id_map, service_name, env="test"):
     """
     获取具体服务的结果信息
     :param sn: 请求的sn号
     :param log_id_map: 各服务的id信息字典
     :param service_name: 服务名称，如"NluTemplate:nlu"
     :param env: 请求的执行环境, default="test"
-    :param date: 服务日志写入时间, 格式为"%Y%m%d",如"20230308"
     """
-    if not date:
-        date = get_version("%Y%m%d")
-    elif "-" in date:
-        date = date.replace("-", "")
+
+    # date: 服务日志写入时间, 格式为"%Y%m%d",如"20230308"
+    date = sn[1:9]
     log_id = log_id_map.get(service_name)
     if env == "test":
-        url = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail?" + \
-              f"id={log_id}&date={date}&sn={sn}"
+        url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
     elif env == "sim":
-        url = "https://aisim.haiersmarthomes.com/bomp-logdata-adapter/datalog/getHbaseChainLogDetail?" + \
-              f"id={log_id}&date={date}&sn={sn}"
+        url_base = "https://aisim.haiersmarthomes.com/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
     else:
-        url = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getHbaseChainLogDetail?" + \
-              f"id={log_id}&date={date}&sn={sn}"
+        url_base = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
+
+    url = url_base + f"?id={log_id}&date={date}&sn={sn}"
     payload = {}
     headers = {}
 
@@ -151,22 +151,17 @@ def rm_extract_domain(nlu_info):
     return filtered
 
 
-def get_tpl_match_result(sn, env="test", date=None):
+def get_tpl_match_result(sn, env="test"):
     """
     获取模板匹配NluTemplate:nlu结果
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
-    :param date: 日志写入时间，格式为"%Y%m%d"，如"20230308"
     """
-    log_id_map = get_log_id(sn, env, date)
-    if not date:
-        date = get_version("%Y%m%d")
-    elif "-" in date:
-        date = date.replace("-", "")
-    # date = get_version("%Y%m%d")
+    print(format_string(f"template match result: env={env}, sn={sn}"))
+    log_id_map = get_log_id(sn, env)
 
     service_name = "NluTemplate:nlu"
-    service_info = get_service_info(sn, log_id_map, service_name, env, date)
+    service_info = get_service_info(sn, log_id_map, service_name, env)
     data = service_info.get("data", {})
     # req = json.loads(data["reqBody"]) if "reqBody" in data else None
     # param = data.get("reqParam", None)
@@ -180,6 +175,9 @@ def get_tpl_match_result(sn, env="test", date=None):
     simple_semantics = rm_block_semantics(simple_semantics)
     simple_semantics = rm_extract_domain(simple_semantics)
     simple_semantics = rm_internal_command(simple_semantics)
+    if simple_semantics:
+        simple_semantics = json.dumps(simple_semantics, indent=4, ensure_ascii=False)
+    print(simple_semantics)
 
     return simple_semantics
 
@@ -215,21 +213,17 @@ def parse_nlu_info_from_log(child_semantics):
     return nlu_info
 
 
-def get_log_trace_info_from_log(sn, env="test", date=None):
+def get_log_trace_info_from_log(sn, env="test"):
     """
     获取dialog-system:LogTrace服务的结果
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
-    :param date: 日志写入时间，格式为"%Y%m%d"，如"20230308"
     """
-    log_id_map = get_log_id(sn, env, date)
-    if not date:
-        date = get_version("%Y%m%d")
-    elif "-" in date:
-        date = date.replace("-", "")
+    print(format_string(f"log trace info: env={env}, sn={sn}"))
+    log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:LogTrace"
 
-    service_info = get_service_info(sn, log_id_map, service_name, env, date)
+    service_info = get_service_info(sn, log_id_map, service_name, env)
     data = service_info.get("data", {})
     # req = json.loads(data["reqBody"]) if "reqBody" in data else None
     # param = data.get("reqParam", None)
@@ -239,25 +233,22 @@ def get_log_trace_info_from_log(sn, env="test", date=None):
     log_trace_info = log_trace_info.replace("\\r", "\r")
     log_trace_info = log_trace_info.replace("\\n", "\n")
     log_trace_info = log_trace_info.replace("\\t", "\t")
+    print(log_trace_info)
 
     return log_trace_info
 
 
-def get_do_nlu_info_from_log(sn, env="test", date=None):
+def get_do_nlu_info_from_log(sn, env="test"):
     """
     获取dialog-system:doNlu服务的结果
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
-    :param date: 日志写入时间，格式为"%Y%m%d"，如"20230308"
     """
-    log_id_map = get_log_id(sn, env, date)
-    if not date:
-        date = get_version("%Y%m%d")
-    elif "-" in date:
-        date = date.replace("-", "")
+    print(format_string(f"do_nlu info: env={env}, sn={sn}"))
+    log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:doNlu"
 
-    service_info = get_service_info(sn, log_id_map, service_name, env, date)
+    service_info = get_service_info(sn, log_id_map, service_name, env)
     data = service_info.get("data", {})
     # req = json.loads(data["reqBody"]) if "reqBody" in data else None
     # param = data.get("reqParam", None)
@@ -271,24 +262,21 @@ def get_do_nlu_info_from_log(sn, env="test", date=None):
     # filter unimportant semantics
     nlu_info = rm_extract_domain(nlu_info)
     nlu_info = rm_internal_command(nlu_info)
+    if nlu_info:
+        nlu_info = json.dumps(nlu_info, indent=4, ensure_ascii=False)
+    print(nlu_info)
 
     return nlu_info
 
 
 def main():
-    env = "sim"
-    sn = "t20230318171452303396486656"
-    date = "2023-03-18"
-    nlu_info = get_do_nlu_info_from_log(sn, env, date)
-    print(f"nlu_info: \n{nlu_info}\n")
+    env = "test"
+    sn = "t20230425170334806661466624"
+    get_do_nlu_info_from_log(sn, env)
 
-    tpl_info = get_tpl_match_result(sn, env, date)
-    print(f"template match info: \n{tpl_info}\n")
+    get_tpl_match_result(sn, env)
 
-    sn = "20230331094735474000555008"
-    date = "2023-03-31"
-    log_trace_info = get_log_trace_info_from_log(sn, "service", date)
-    print(f"log trace info: \n{log_trace_info}")
+    get_log_trace_info_from_log(sn, env)
     return
 
 
