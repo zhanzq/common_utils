@@ -39,7 +39,11 @@ def get_log_id(sn, env="test"):
     :return: dict()
     """
     # date: 服务日志写入时间, 格式为"%Y%m%d",如"2023-03-08"
-    date = f"{sn[1:5]}-{sn[5:7]}-{sn[7:9]}"
+    date_start = 0
+    while sn[date_start] != '2':
+        date_start += 1
+    date = f"{sn[date_start:date_start+4]}-{sn[date_start+4:date_start+6]}-{sn[date_start+6:date_start+8]}"
+
     if env == "test":
         url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getlogList"
     elif env == "sim":
@@ -100,6 +104,7 @@ def get_nlu_receiver_info_from_log(sn, env="test"):
     for key in nlu_receiver_info:
         nlu_receiver_info[key] = rm_extract_domain(nlu_receiver_info[key])
         nlu_receiver_info[key] = rm_internal_command(nlu_receiver_info[key])
+        nlu_receiver_info[key] = rm_block_semantics(nlu_receiver_info[key])
 
     if nlu_receiver_info:
         nlu_receiver_info = json.dumps(nlu_receiver_info, indent=4, ensure_ascii=False)
@@ -118,7 +123,11 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
     """
 
     # date: 服务日志写入时间, 格式为"%Y%m%d",如"20230308"
-    date = sn[1:9]
+    date_start = 0
+    while sn[date_start] != '2':
+        date_start += 1
+    date = f"{sn[date_start:date_start+8]}"
+
     log_id = log_id_map.get(service_name)
     if env == "test":
         url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
@@ -315,8 +324,8 @@ def get_do_nlu_info_from_log(sn, env="test"):
 
 
 def main():
-    env = "test"
-    sn = "t20230425170334806661466624"
+    env = "service"
+    sn = "20230423140824427000117245"
     get_nlu_receiver_info_from_log(sn, env)
 
     get_do_nlu_info_from_log(sn, env)
