@@ -146,16 +146,52 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
     return service_info
 
 
-def _parse_tpl_match_semantics(child_semantics):
+def get_semantics(resp_obj, clean=True):
+    """
+    获取服务（如nlu, dm, template等）返回的结果中的semantics信息，并进行过滤
+    :param resp_obj: 服务返回的json格式数据
+    :param clean: 过滤不必要的类型，如Block类，Internal类等，默认为True
+    :return:
+    """
+    if not resp_obj or "semantics" not in resp_obj or not resp_obj["semantics"]:
+        return []
+
+    semantics = []
+    if clean:
+        for item in resp_obj["semantics"]:
+            if not item or "childSemantics" not in item or not item["childSemantics"]:
+                continue
+
+            child_semantics = item["childSemantics"]
+            child_semantics = rm_block_semantics(child_semantics)
+            child_semantics = rm_internal_command(child_semantics)
+            child_semantics = rm_extract_domain(child_semantics)
+            semantics.extend(child_semantics)
+
+    return semantics
+
+
+def get_semantics_info(resp_obj):
+    semantics = get_semantics(resp_obj)
+    channel = resp_obj["retChannel"]
+    if channel == "nluTemplate":
+        semantics_info = [_parse_tpl_match_semantic(it) for it in semantics]
+    else:
+        semantics_info = [parse_nlu_info_from_log(it) for it in semantics]
+
+    return semantics_info
+
+
+def _parse_tpl_match_semantic(child_semantic):
     """
     获取匹配成功的模板信息
-    :param child_semantics: 模板匹配的语义信息
+    :param child_semantic: 模板匹配的语义信息
     """
-    domain = child_semantics["domain"]
-    intent = child_semantics["intent"]
-    intent_score = child_semantics["intentScore"]
-    slots = {it["name"]: it["value"] for it in child_semantics["slots"]}
-    tpl_id, tpl = child_semantics["source"].split(":")
+    domain = child_semantic["domain"]
+    intent = child_semantic["intent"]
+    intent_score = child_semantic["intentScore"]
+    slots = {it["name"]: it["value"] for it in child_semantic["slots"]}
+    tpl_id, tpl = child_semantic["source"].split(":")
 
     simple_semantics = {"domain": domain, "intent": intent, "intent_score": intent_score, "slots": slots,
                         "tpl_id": tpl_id, "tpl": tpl}
@@ -165,7 +201,7 @@ def _parse_tpl_match_semantics(child_semantics):
 
 def rm_block_semantics(semantics):
     """
-    过滤nlu_info中的Block类语义信息，如
+    过滤nlu_info中的Block类语义信息，如**BlockTemplate**
     :param semantics: 待过滤的语义信息
     :return:
     """
@@ -224,7 +260,7 @@ def get_tpl_match_result(sn, env="test"):
     simple_semantics = None
     if semantics:
         child_semantics = semantics[0]["childSemantics"]
-        simple_semantics = [_parse_tpl_match_semantics(it) for it in child_semantics]
+        simple_semantics = [_parse_tpl_match_semantic(it) for it in child_semantics]
 
     simple_semantics = rm_block_semantics(simple_semantics)
     simple_semantics = rm_extract_domain(simple_semantics)

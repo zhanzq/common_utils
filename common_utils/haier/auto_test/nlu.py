@@ -7,6 +7,7 @@
 
 import json
 import requests
+from .parse_log import get_semantics_info
 
 
 def get_nlu_service_response(query, env="local", device="X20"):
@@ -141,6 +142,46 @@ def parse_dm_response(json_resp):
         dm_info.update(_parse_dm_response_params(params))
 
     return dm_info
+
+
+def get_tpl_service_response(query, env="dev"):
+    """
+       在特定环境中获取dm的执行结果,目前只支持**开发环境**, <==> env = "dev", 且使用时需开启sico VPN
+       :param query: 输入语句
+       :param env: 测试环境，test:验收, sim:仿真, service:生产, 默认为生产环境
+       :return: dict, dm service处理结果
+       """
+    url = {
+        "dev": "http://10.205.241.186:11370/nlp-template-release/template/query",
+        "test": "https://aitest.haiersmarthomes.com/nlp-template-release/template/query",
+        "sim": "https://aisim.haiersmarthomes.com/nlp-template-release/template/query",
+        "service": "https://aiservice.haier.net/nlp-template-release/template/query"
+    }[env]
+
+    payload = json.dumps({
+        "sn": "scene_test",
+        "query": "",
+        "originQuery": query,
+        "nickNameTable": {
+            "deviceNickName": {
+                "scenes": "(空调613A开关机状态开机|DEE2播放随机音乐)",
+                "airconditioner": "(挂式空调|空调22|空调2|空调3)"
+            }
+        }
+    })
+    headers = {
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    json_resp = json.loads(response.text)
+
+    return json_resp
+
+
+def parse_tpl_response(json_resp):
+    return get_semantics_info(json_resp)
 
 
 def _parse_dm_response_params(params):
