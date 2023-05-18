@@ -16,6 +16,55 @@ import hashlib
 import subprocess
 
 
+class Context:
+    """
+    Initialize the object with a dictionary.
+
+    Args:
+        d (dict): A dictionary to initialize the object with.
+    """
+
+    def __init__(self, *args, **kwargs):
+        if args:
+            self.__dict__.update(args[0])
+        self.__dict__.update(kwargs)
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __setitem__(self, key, value):
+        self.__dict__[key] = value
+
+    def __getattr__(self, key):
+        return self.__dict__[key]
+
+    def __setattr__(self, key, value):
+        self.__dict__[key] = value
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def items(self):
+        return self.__dict__.items()
+
+    """
+    Returns a string representation of the object's dictionary.
+
+    Usage example:
+    # Create a context object
+    context = Context()
+
+    # Print the string representation of the object's dictionary
+    print(context.__str__())
+    """
+
+    def __str__(self):
+        return str(self.__dict__)
+
+
 def get_version(version_format="%m%d"):
     """
     根据日期格式返回当前日期对应的版本号
