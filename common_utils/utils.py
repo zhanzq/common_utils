@@ -50,6 +50,12 @@ class Context:
     def items(self):
         return self.__dict__.items()
 
+    def pop(self, key):
+        return self.__dict__.pop(key)
+
+    def get(self, key):
+        return self.__dict__.get(key)
+
     """
     Returns a string representation of the object's dictionary.
 
