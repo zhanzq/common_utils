@@ -15,5 +15,8 @@ from .version import __version__
 import common_utils.algorithm
 import common_utils.text_io
 import common_utils.haier
+import common_utils.openai
+
 from common_utils.utils import get_version, format_string
+
 
