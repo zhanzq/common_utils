@@ -75,7 +75,7 @@ def parse_nlu_response(json_resp):
     return nlu_info
 
 
-def get_dm_service_response(query, env="service", device="X20"):
+def get_dm_service_response(query, env="service", device="X20", simulation=True):
     """
     在特定环境中获取dm的执行结果
     :param query: 输入语句
@@ -94,7 +94,7 @@ def get_dm_service_response(query, env="service", device="X20"):
             "userId": "3452436347",
             "userInput": query,
             "otherParams": {
-                "simulation": False,
+                "simulation": simulation,
                 "neednlp": "yes",
                 "rewakeStat": "",
                 "multiDialog": "no",

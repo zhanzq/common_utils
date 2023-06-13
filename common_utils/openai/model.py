@@ -13,7 +13,7 @@ import requests
 
 
 def davinci(query, tries=0, max_tries=3):
-    time.sleep(1)
+    # time.sleep(1)
     api_key = os.environ["OPENAI_API_KEY"]
     url = "https://api.openai.com/v1/completions"
     headers = {
@@ -46,7 +46,7 @@ def davinci(query, tries=0, max_tries=3):
 
 
 def chatGPT(sentence, tries=0, max_tries=3):
-    time.sleep(5)
+    # time.sleep(5)
     url = "https://api.openai.com/v1/chat/completions"
 
     api_key = os.environ["OPENAI_API_KEY"]
