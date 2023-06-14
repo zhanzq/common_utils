@@ -82,11 +82,12 @@ def parse_nlu_receiver_info_from_log(resp_nlu_receiver):
     return nlu_receiver_info
 
 
-def get_nlu_receiver_info_from_log(sn, env="test"):
+def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
     """
         获取dialog-system:NluReceiver服务的结果
         :param sn: 请求的sn号
         :param env: 请求的执行环境, default="test"
+        :param verbose: 是否打印详细信息, 默认不打印
         """
     print(format_string(f"nlu receiver info: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
@@ -107,8 +108,10 @@ def get_nlu_receiver_info_from_log(sn, env="test"):
         nlu_receiver_info[key] = rm_block_semantics(nlu_receiver_info[key])
 
     if nlu_receiver_info:
-        nlu_receiver_info = json.dumps(nlu_receiver_info, indent=4, ensure_ascii=False)
-    print(nlu_receiver_info)
+        print_info = json.dumps(nlu_receiver_info, indent=4, ensure_ascii=False)
+
+        if verbose:
+            print(print_info)
 
     return nlu_receiver_info
 
@@ -241,11 +244,12 @@ def rm_extract_domain(nlu_info):
     return filtered
 
 
-def get_tpl_match_result(sn, env="test"):
+def get_tpl_match_info_from_log(sn, env="test", verbose=False):
     """
     获取模板匹配NluTemplate:nlu结果
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
+    :param verbose: 是否打印详细日志信息，默认为不打印
     """
     print(format_string(f"template match result: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
@@ -266,8 +270,9 @@ def get_tpl_match_result(sn, env="test"):
     simple_semantics = rm_extract_domain(simple_semantics)
     simple_semantics = rm_internal_command(simple_semantics)
     if simple_semantics:
-        simple_semantics = json.dumps(simple_semantics, indent=4, ensure_ascii=False)
-    print(simple_semantics)
+        print_info = json.dumps(simple_semantics, indent=4, ensure_ascii=False)
+        if verbose:
+            print(print_info)
 
     return simple_semantics
 
@@ -303,11 +308,12 @@ def parse_nlu_info_from_log(child_semantics):
     return nlu_info
 
 
-def get_log_trace_info_from_log(sn, env="test"):
+def get_log_trace_info_from_log(sn, env="test", verbose=False):
     """
     获取dialog-system:LogTrace服务的结果
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
+    :param verbose: 是否打印日志信息，默认为不打印
     """
     print(format_string(f"log trace info: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
@@ -323,16 +329,18 @@ def get_log_trace_info_from_log(sn, env="test"):
     log_trace_info = log_trace_info.replace("\\r", "\r")
     log_trace_info = log_trace_info.replace("\\n", "\n")
     log_trace_info = log_trace_info.replace("\\t", "\t")
-    print(log_trace_info)
+    if verbose:
+        print(log_trace_info)
 
     return log_trace_info
 
 
-def get_do_nlu_info_from_log(sn, env="test"):
+def get_do_nlu_info_from_log(sn, env="test", verbose=False):
     """
     获取dialog-system:doNlu服务的结果
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
+    :param verbose: 是否打印日志信息，默认为不打印
     """
     print(format_string(f"do_nlu info: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
@@ -353,8 +361,9 @@ def get_do_nlu_info_from_log(sn, env="test"):
     nlu_info = rm_extract_domain(nlu_info)
     nlu_info = rm_internal_command(nlu_info)
     if nlu_info:
-        nlu_info = json.dumps(nlu_info, indent=4, ensure_ascii=False)
-    print(nlu_info)
+        print_info = json.dumps(nlu_info, indent=4, ensure_ascii=False)
+        if verbose:
+            print(print_info)
 
     return nlu_info
 
@@ -362,13 +371,13 @@ def get_do_nlu_info_from_log(sn, env="test"):
 def main():
     env = "service"
     sn = "20230423140824427000117245"
-    get_nlu_receiver_info_from_log(sn, env)
+    get_nlu_receiver_info_from_log(sn, env, verbose=True)
 
-    get_do_nlu_info_from_log(sn, env)
+    get_do_nlu_info_from_log(sn, env, verbose=True)
 
-    get_tpl_match_result(sn, env)
+    get_tpl_match_info_from_log(sn, env, verbose=True)
 
-    get_log_trace_info_from_log(sn, env)
+    get_log_trace_info_from_log(sn, env, verbose=True)
     return
 
 
