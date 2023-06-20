@@ -194,7 +194,9 @@ def _parse_tpl_match_semantic(child_semantic):
     intent = child_semantic["intent"]
     intent_score = child_semantic["intentScore"]
     slots = {it["name"]: it["value"] for it in child_semantic["slots"]}
-    tpl_id, tpl = child_semantic["source"].split(":")
+    lst = child_semantic["source"].split(":")
+    tpl_id = lst[0]
+    tpl = ":".join(lst[1:])
 
     simple_semantics = {"domain": domain, "intent": intent, "intent_score": intent_score, "slots": slots,
                         "tpl_id": tpl_id, "tpl": tpl}
