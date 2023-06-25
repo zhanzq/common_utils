@@ -192,7 +192,8 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
             if val is None:
                 val = ""
             if type(val) is float or type(val) is int:
-                pass
+                val = str(val)
+                # pass
             else:
                 val = str(val)
             sheet.cell(row=i + 2, column=j + 1).value = val  # save the original type
