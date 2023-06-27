@@ -82,6 +82,21 @@ def parse_nlu_receiver_info_from_log(resp_nlu_receiver):
     return nlu_receiver_info
 
 
+def _parse_service_info(service_info):
+    data = service_info.get("data", {})
+    req = json.loads(data["reqBody"]) if "reqBody" in data else {}
+    param = req.get("args0", {})
+    if "query" in param:
+        query = param["query"]
+    else:
+        query = param.get("userInput", None)
+
+    resp = json.loads(data["response"]) if "response" in data else None
+    resp = resp.get("resp", resp)
+
+    return query, resp
+
+
 def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
     """
         获取dialog-system:NluReceiver服务的结果
@@ -89,16 +104,12 @@ def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
         :param env: 请求的执行环境, default="test"
         :param verbose: 是否打印详细信息, 默认不打印
         """
-    print(format_string(f"nlu receiver info: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:NluReceiver"
-
     service_info = get_service_info(sn, log_id_map, service_name, env)
-    data = service_info.get("data", {})
-    # req = json.loads(data["reqBody"]) if "reqBody" in data else None
-    # param = data.get("reqParam", None)
-    resp = json.loads(data["response"]) if "response" in data else None
-    resp = resp.get("resp", {})
+    query, resp = _parse_service_info(service_info)
+    print(format_string(f"nlu receiver info: env={env}, query={query}"))
+
     nlu_receiver_info = parse_nlu_receiver_info_from_log(resp_nlu_receiver=resp)
 
     # filter unimportant semantics
@@ -253,15 +264,12 @@ def get_tpl_match_info_from_log(sn, env="test", verbose=False):
     :param env: 请求的执行环境, default="test"
     :param verbose: 是否打印详细日志信息，默认为不打印
     """
-    print(format_string(f"template match result: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
-
     service_name = "NluTemplate:nlu"
     service_info = get_service_info(sn, log_id_map, service_name, env)
-    data = service_info.get("data", {})
-    # req = json.loads(data["reqBody"]) if "reqBody" in data else None
-    # param = data.get("reqParam", None)
-    resp = json.loads(data["response"]) if "response" in data else None
+    query, resp = _parse_service_info(service_info)
+
+    print(format_string(f"template match result: env={env}, query={query}"))
     semantics = resp.get("semantics", [])
     simple_semantics = None
     if semantics:
@@ -317,15 +325,11 @@ def get_log_trace_info_from_log(sn, env="test", verbose=False):
     :param env: 请求的执行环境, default="test"
     :param verbose: 是否打印日志信息，默认为不打印
     """
-    print(format_string(f"log trace info: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:LogTrace"
-
     service_info = get_service_info(sn, log_id_map, service_name, env)
-    data = service_info.get("data", {})
-    # req = json.loads(data["reqBody"]) if "reqBody" in data else None
-    # param = data.get("reqParam", None)
-    resp = json.loads(data["response"]) if "response" in data else None
+    query, resp = _parse_service_info(service_info)
+    print(format_string(f"log trace info: env={env}, query={query}"))
 
     log_trace_info = json.dumps(resp, ensure_ascii=False, indent=4)
     log_trace_info = log_trace_info.replace("\\r", "\r")
@@ -344,15 +348,12 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
     :param env: 请求的执行环境, default="test"
     :param verbose: 是否打印日志信息，默认为不打印
     """
-    print(format_string(f"do_nlu info: env={env}, sn={sn}"))
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:doNlu"
-
     service_info = get_service_info(sn, log_id_map, service_name, env)
-    data = service_info.get("data", {})
-    # req = json.loads(data["reqBody"]) if "reqBody" in data else None
-    # param = data.get("reqParam", None)
-    resp = json.loads(data["response"]) if "response" in data else None
+    query, resp = _parse_service_info(service_info)
+    print(format_string(f"do_nlu info: env={env}, query={query}"))
+
     semantics = resp.get("semantics", [])
     nlu_info = None
     if semantics:
@@ -371,8 +372,8 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
 
 
 def main():
-    env = "service"
-    sn = "20230423140824427000117245"
+    env = "test"
+    sn = "20230626142755274000378625"
     get_nlu_receiver_info_from_log(sn, env, verbose=True)
 
     get_do_nlu_info_from_log(sn, env, verbose=True)
