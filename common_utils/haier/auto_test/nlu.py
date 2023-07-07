@@ -7,7 +7,7 @@
 
 import json
 import requests
-from .parse_log import get_semantics_info
+from common_utils.haier.auto_test.parse_log import get_semantics_info
 
 
 def get_nlu_service_response(query, env="local", device="X20"):
@@ -34,6 +34,24 @@ def get_nlu_service_response(query, env="local", device="X20"):
             "roomNickName": {
                 "roomPtn": "(洗漱间|卧室|客厅|全屋|厨房|阳台)"
             }
+        },
+        "otherParams": {
+            "simulation": True,
+            "neednlp": "yes",
+            "rewakeStat": "",
+            "multiDialog": "no",
+            "specialNlp2": "yes",
+            "screenState": "",
+            "nlpmodel": "x20",
+            "nlpType": "X20",
+            "addQuestion": False,
+            "needcontent": True,
+            "isQuitMultContinueDialog": "no",
+            "runStatus": "",
+            "isMultiContinueDialog": "no",
+            "userId": "3452436347",
+            "agcKey": False,
+            "forwardPass": False,
         },
         "originQuery": query,
         "query": query
