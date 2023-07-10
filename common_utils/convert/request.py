@@ -5,56 +5,119 @@
 #
 
 
+import re
 import json
 
 
-def __extract_data(curl_code_lines):
-    data = ""
+def __parse_curl_code(curl_code):
+    # replace format char
+    curl_code = re.sub(string=curl_code, pattern="\s", repl=" ")
+    ptn = "(-H|--header|--location|--data|--data-raw)"
+    items = re.split(string=curl_code, pattern=ptn)
 
-    for line in curl_code_lines:
-        flags = ["--data-raw ", "--data "]
-        for flag in flags:
-            if line.startswith(flag):
-                item = line.split(flag)[1].strip()
-                if item[0] == "'" or item[0] == "\"":
-                    item = item[1:-1]
-                data = item
-                break
-    if data:
-        print(data)
-        data = json.loads(data)
-        keys = list(data.keys())
-        for key in keys:
-            if not data[key]:
-                data.pop(key)
-
-    return data
+    return items
 
 
-def __extract_headers(curl_code_lines):
+def __is_data(s):
+    flags = ["--data", "--data-raw"]
+    for flag in flags:
+        if s.startswith(flag):
+            return True
+
+    return False
+
+
+def __extract_data(items):
+    out = {}
+    idx = 0
+    sz = len(items)
+
+    while idx < sz:
+        if __is_data(items[idx]):
+            data = items[idx + 1]
+            try:
+                data = data.strip()
+                data = eval(data)  # 去除两端可能的'或者"
+            except:
+                pass
+            out.update(json.loads(data))
+            idx += 2
+        else:
+            idx += 1
+
+    return out
+
+
+def __is_header(s):
+    flags = ["-H", "--header"]
+    for flag in flags:
+        if s.startswith(flag):
+            return True
+
+    return False
+
+
+def __extract_headers(items):
     headers = {}
-    for line in curl_code_lines:
-        flags = ["-H ", "--header "]
-        for flag in flags:
-            if line.startswith(flag):
-                item = line.split(flag)[1].strip()
-                if item[0] == "'" or item[0] == "\"":
-                    item = item[1:-1]
-                key, val = item.split(": ")
-                headers[key] = val
+    idx = 0
+    sz = len(items)
+
+    while idx < sz:
+        if __is_header(items[idx]):
+            header = items[idx + 1]
+            try:
+                header = header.strip()
+                header = eval(header)  # 去除两端可能的'或者"
+            except:
+                pass
+            key, val = header.split(": ")
+            headers[key] = val
+            idx += 2
+        else:
+            idx += 1
 
     return headers
+
+
+def __is_url(s):
+    flags = ["--location"]
+    for flag in flags:
+        if s.startswith(flag):
+            return True
+
+    return False
+
+
+def __extract_url(items):
+    url = ""
+    idx = 0
+    sz = len(items)
+
+    while idx < sz:
+        if __is_url(items[idx]):
+            tmp = items[idx + 1]
+            try:
+                tmp = tmp.strip()
+                tmp = eval(tmp)
+            except:
+                pass
+            url = tmp
+            break
+        else:
+            idx += 1
+
+    return url
 
 
 def convert_curl_to_python_request(curl_code):
     if not curl_code:
         return ""
-    lines = curl_code.split("   ")
-    url = eval(lines[0].strip().split(" ")[1])  # curl 'https://domain/service'
-
-    headers = __extract_headers(lines)
-    data = __extract_data(lines)
-    codes = f"""import requests
+    items = __parse_curl_code(curl_code)
+    url = __extract_url(items)
+    headers = __extract_headers(items)
+    data = __extract_data(items)
+    codes = f"""
+import requests
 import json
 
 
@@ -79,6 +142,9 @@ def do_request():
 
 def test():
     print(do_request())
+
+
+test()
 
 """
     return codes
