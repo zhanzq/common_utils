@@ -287,6 +287,53 @@ def get_tpl_match_info_from_log(sn, env="test", verbose=False):
     return simple_semantics
 
 
+def _block_check_by_domain(semantics, domain):
+    """
+    过滤nlu_info中的Block类语义信息，如**BlockTemplate**
+    :param semantics: 待过滤的语义信息
+    :param domain: 待检查的领域
+    :return:
+    """
+    filtered = []
+    for semantic in semantics:
+        cur_domain = semantic.get("intent", "").lower()
+        if "block" in cur_domain and domain.lower() in cur_domain:
+            filtered.append(semantic)
+
+    return filtered
+
+
+def block_check(sn, domain_lst, env="test", verbose=False):
+    """
+    获取模板匹配NluTemplate:nlu结果
+    :param sn: 请求的sn号
+    :param domain_lst: 需要检查的领域
+    :param env: 请求的执行环境, default="test"
+    :param verbose: 是否打印详细日志信息，默认为不打印
+    """
+    log_id_map = get_log_id(sn, env)
+    service_name = "NluTemplate:nlu"
+    service_info = get_service_info(sn, log_id_map, service_name, env)
+    query, resp = _parse_service_info(service_info)
+
+    print(format_string(f"block check: domains: {domain_lst}, env={env}, query={query}"))
+    semantics = resp.get("semantics", [])
+    simple_semantics = []
+    if semantics:
+        child_semantics = semantics[0]["childSemantics"]
+        simple_semantics = [_parse_tpl_match_semantic(it) for it in child_semantics]
+
+    blocked_semantics = []
+    for domain in domain_lst:
+        blocked_semantics.extend(_block_check_by_domain(simple_semantics, domain))
+    if blocked_semantics:
+        print_info = json.dumps(blocked_semantics, indent=4, ensure_ascii=False)
+        if verbose:
+            print(print_info)
+
+    return blocked_semantics
+
+
 def parse_nlu_info_from_log(child_semantics):
     """
     获取nlu结果
@@ -373,7 +420,10 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
 
 def main():
     env = "test"
-    sn = "20230626142755274000378625"
+    sn = "20230905192157661000725853"
+    domain_lst = ["Dev.oven", ""]
+    block_check(sn, domain_lst, env, verbose=True)
+
     get_nlu_receiver_info_from_log(sn, env, verbose=True)
 
     get_do_nlu_info_from_log(sn, env, verbose=True)
