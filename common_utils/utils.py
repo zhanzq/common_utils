@@ -14,7 +14,31 @@ from functools import wraps
 import inspect
 import hashlib
 import subprocess
+import random
 
+
+def gen_add_or_sub_questions(top=10):
+    """
+    随机生成N以内的加减法示例，如 0 + 10 = , 10 - 2 =
+    :param top: 算术上限N，默认值为10
+    :return: type, tuple(List, List, List), 返回所有可能的算术示例，分别为加法，减法，加减混合
+    """
+    add_lst = []
+    sub_lst = []
+    mix_lst = []
+    for c in range(10, 1, -1):
+        for a in range(c, -1, -1):
+            b = c - a
+            sub_lst.append(f"{c} - {a} = ")
+            add_lst.append(f"{a} + {b} = ")
+
+    mix_lst.extend(sub_lst)
+    mix_lst.extend(add_lst)
+    random.shuffle(add_lst)
+    random.shuffle(sub_lst)
+    random.shuffle(mix_lst)
+
+    return add_lst, sub_lst, mix_lst
 
 class Context:
     """
