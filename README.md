@@ -1,6 +1,13 @@
 # 常用工具包
+## version 1.3.0
+### updates
+1. 新增common_utils.pdf.create_pdf模块，用于创建并写入pdf文档
+   + 支持header和footer设置
+   + 支持页边距和页面行数设置
+2. common_utils/pdf/fonts目录中增加华文字体， 用于支持中文字符写入pdf文档
 
-## version 1.9 
+
+## version 1.2.9 
 ### updates
 1. 新增common_utils.convert.translation模块，用于处理翻译任务
   + 目前可支持google翻译和有道翻译
