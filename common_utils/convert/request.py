@@ -12,7 +12,7 @@ import json
 def __parse_curl_code(curl_code):
     # replace format char
     curl_code = re.sub(string=curl_code, pattern="\s", repl=" ")
-    ptn = "(-H|--header|--location|--data|--data-raw)"
+    ptn = "(curl|-H|--header|--location|--data|--data-raw)"
     items = re.split(string=curl_code, pattern=ptn)
 
     return items
@@ -45,7 +45,10 @@ def __extract_data(items):
         else:
             idx += 1
 
-    return out
+    if not out:
+        return ""
+    else:
+        return out
 
 
 def __is_header(s):
@@ -80,12 +83,18 @@ def __extract_headers(items):
 
 
 def __is_url(s):
-    flags = ["--location"]
+    flags = ["curl"]
     for flag in flags:
         if s.startswith(flag):
             return True
 
     return False
+
+
+def __preprocess_url_code(url_code):
+    url_code = url_code.replace("--location", "")
+    url_code = url_code.replace("--compressed", "")
+    return url_code
 
 
 def __extract_url(items):
@@ -140,11 +149,8 @@ def do_request():
     return obj_resp
 
 
-def test():
-    print(do_request())
+do_request()
 
-
-test()
 
 """
     return codes
