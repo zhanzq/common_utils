@@ -5,7 +5,7 @@
 import os
 
 from fpdf import FPDF
-from color import COLOR
+from common_utils.pdf.color import COLOR
 
 from common_utils.utils import gen_add_or_sub_questions
 
