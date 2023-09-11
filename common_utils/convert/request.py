@@ -12,7 +12,7 @@ import json
 def __parse_curl_code(curl_code):
     # replace format char
     curl_code = re.sub(string=curl_code, pattern="\s", repl=" ")
-    ptn = "(curl|-H|--header|--location|--data|--data-raw)"
+    ptn = "(curl|-H|--header|--location|--data-raw|--data|--compressed)"
     items = re.split(string=curl_code, pattern=ptn)
 
     return items
@@ -38,10 +38,15 @@ def __extract_data(items):
             try:
                 data = data.strip()
                 data = eval(data)  # 去除两端可能的'或者"
-            except:
-                pass
-            out.update(json.loads(data))
-            idx += 2
+            except Exception as e:
+                print(e)
+                idx += 1
+                continue
+            if data and "=" in data and "&" in data:
+                return data
+            else:
+                out.update(json.loads(data))
+            break
         else:
             idx += 1
 
@@ -125,6 +130,9 @@ def convert_curl_to_python_request(curl_code):
     url = __extract_url(items)
     headers = __extract_headers(items)
     data = __extract_data(items)
+    if type(data) is dict:
+        data = "\"\"\"{json.dumps(data, indent=4, ensure_ascii=False)}\"\"\""
+
     codes = f"""
 import requests
 import json
@@ -138,7 +146,7 @@ def do_request():
     payload = ""
     data = "{data}"
     if data:
-        payload = json.dumps(data)
+        payload = data
         method = "POST"
 
     response = requests.request(method, url, headers=headers, data=payload)
@@ -157,19 +165,25 @@ do_request()
 
 
 def main():
-    curl_code = """curl 'https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/workbench/categoryList?pageNum=1&pageSize=10' \
-  -H 'Accept: application/json, text/plain, */*' \
+    curl_code = """curl 'https://aidev.haiersmarthomes.com/xuanwu-admin/ver/deployTask/add' \
+  -H 'Accept: application/json, text/javascript, */*; q=0.01' \
   -H 'Accept-Language: zh-CN,zh;q=0.9' \
+  -H 'Cache-Control: no-cache' \
   -H 'Connection: keep-alive' \
-  -H 'Cookie: JSESSIONID=8c0518ad-1d95-4154-ae8d-7a73fa3aca47; rememberMe=D5YJf4EvM8RTi5yOKkwu+yXNhc5/aA2bUR3ofWlSVvzNAC6oZBwhl9xyLXkXSeCUkjGzelI62V5KQW87BkbdmZul1uVK/zwzVg0YYu7G3hRcUHuXwMWNIiciwE/KA2PYJmslz1JeQi2c6EzG7trgpByv3HIU1iauDc8gQ7UYmD05NeDOHXdmeavspc6VDwE/OV49QechDIeRWWQGGlDTPXBMuGPzv2VGHQ5anbtE+Vi3jt2FvuqyzJvNc41WIN7euJUmjDveh2FhwvkPeo3tFF86IBDD5wPuTx/GoemjnOZR+T670bMngmvmo9k6Sev7FryaZLqUYltfD58aTeVD7GsjLYvHoTATPJJrhwzDFxYTi7VgPZMNhf0eeptT+PMfrEzPuYZxFDXYG1bcNadV9DeI62qPiIgLaC60uL0BTV6H3VzuNQRi2b9oteHgkMwiAt7ZPkqZLzBb8uYzE5xoHqACat+cK/mFEYkDw6ExU9AVqvjxwJhk8VMHG/EbdJXUiE4w+DaAkDW1U9Ejzixcav1dN0KF5mN2c45laBYUYOIghNbxhwX3kOqlYeLQpRQvQKqzjMd/0UksJvuy6APrdhQEqTnSNW/l/aHcxVJkcAu8Wj5ZB0cfdnoN1uXmaIQ/xWVx1Qx1iXuccr5m7NlLLDiMAkZu3zeQE5v1aegd5L+l+V52myNgzIORiusBZw+tp5Q38fx9cAVDKBB3Gt1WJql3Mq1CbveXOAwgX+EDKqSTvASI510U2t8shBnAmid6lSZtVaq0RIZfnVD6hoU6oVdzMZuN7g6v4jL2AaDk2sS0WCg1UvW5A8l2qN3RNlvFl4rCbl3kPYwrFXKsQkeMsYr6hjOE++uBqZYLaMkR3PLHVQfjHnCfj+XYvjliUlOZbNCm3vV628b2Te7x7X1LF2claPpT+C5kgMsj0iNjf/N+9ueNcGDinxKp+hKkAmqgDTZigeGAr/4C+keOy1muypWikNJWXsAT9HYNkvd00jneRR+xhYRwVaQpKHdzX6/bQNZkjSR+iyM82CQ5adU430haAxogTvYJJ3pOvx6kXgy/nf6tXfO4vK3faU9BKyFkJDe+KyVyprv+QEsSv5GLVXAHki7s7mz46wlXxawJZWlEQWGSTS0CYWH78UUYxSCansXGYYtWCNqhE7OLnl789QJeGWoUvS7QqOvxHjaoIcO4Zf+dgV6jzFEFFZhhVS1GD0uTDOObujc1ow8O77Gz3WleE6lYV9wgHlYtiarF5uZ9aYPGsy9NQblu5XIBOcHpJ6v60vk7ZPk2Olp4PqSz2av+X7i2z4xXHcab+LNfuV4qMSXov81yIsncx7Xl/XzG51AOkb5LoyzjeG12Ra2FlrXI/Asdx+G5xc/m2wz5go1rWaN0EYpx1enGfx3BVNzECzrpmWXlpVmKBcV/Xx/41m2dsi0PWPHH4leCVGBORm463PnlD72s/1POPrFH4PL6869LVJLi5WNpSbLkrvMyRNYNAWa3/CcIpgJzvSnXrNGMG1rVQku0iVeq7mXqqYfO/MnMlvlSrHczSXImp4S6kLn7XIqzS5OuISrO45zAyx8m/5LAC04RBtJgmd1DO+K3Mgn3lSWeyVPqQIEuvcpDQAVZ+30VgoiiV4LYYGm8hpmrnH2DXjwuZztthDdfUuclej3eXSXLktqBZwvPXVMKD2zt27kRdvVyhl2sB/TAfXH938wruRVqKCCI9BPI/Y+bF6c+gTAF1zTReZo56xHcfppfLqByvURKz2kXe0TtqXnq5vuVFaAGtLtQBAwjTXi/C7bHXy0TynjvEkYH074xqSb9/VnDgjOc0D4W4FrzdXl46oDrdg6yu6OmoQP0JMo4Zik7JGcwO6DC5xK+PFzZyTkN+M9RUufg44dobKD7RQe1afOq3yxn1+aJkjctDaZn0HVXUUkvoqNUijB7ABjKCEEJuRG+FC+OoXCyiG/6b+mXK41ffUow4TmpeGV8WOtwvgIiRk2MvMcba22d0l0804G+Gk1JZSpUWsxOkwdTfoUsiZUxBWNXlw+23EByQZ96nahkliW51ynf+er12RqyB5Cet4PT27D9DTVOjMpBpVzYDLeJYd3DnQnNkWbHZ/LvdnF9Q1ZRMa9u2fzjDDmpYAT8Bb9ChfopP+WeddlZxScKYfAsYepL8eUzr6TFRtPGSbe6tYFMJ+6GdTkDpAD4yagSMsLvRESS4hy17O/0O3BwZcUUROKi/HfAKJPvNvLUBq5Id0JQmrOdH64CVwTCQGHztRHffesvKoa2zK8DIozPA44Xn7RqHOYKe2/j3pc2F95IQ3QcxO1TWCHLbe4QcBy0fT9jsgEI8vxyMDYTm2OHP1gtw/By9r0bNqG04eMhDgg8AOpM8gaf1PjzPGk0YxdpgPYY9r+lQPw1Y3tTrhbeQAUqtbc27c1l9tgd26N02HZ0l6f/Vv4IR3U9dsqvcbherlxGja0Sk2WgagKF2TjQCpBEaCuAQeWgWw2mrud+83K3vfxVzQeM1GEmjrReCE3skoEolT5plPZxVAV1lodhN95KYTDApOMvqDQ4g45NA8DQQMuvoZTb7F+9z39SnEAYeRLbx0Knc73hXGM+8xlatGsgwWm8v6dSVvpZz5atCHF0VGyLF8I2y62PnYAeeOxMO28W767w5L0=' \
-  -H 'Referer: https://aidev.haiersmarthomes.com/skills/upload/workbench/skillIndex.html' \
+  -H 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8' \
+  -H 'Cookie: visible=false; username=zhanzhiqiang; JSESSIONID=29d20a79-0348-4a78-8a72-daa6216d1a54; rememberMe=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' \
+  -H 'Origin: https://aidev.haiersmarthomes.com' \
+  -H 'Pragma: no-cache' \
+  -H 'Referer: https://aidev.haiersmarthomes.com/xuanwu-admin/ver/deployTask/add' \
   -H 'Sec-Fetch-Dest: empty' \
   -H 'Sec-Fetch-Mode: cors' \
   -H 'Sec-Fetch-Site: same-origin' \
-  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36' \
-  -H 'sec-ch-ua: "Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"' \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'sec-ch-ua: "Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"' \
   -H 'sec-ch-ua-mobile: ?0' \
   -H 'sec-ch-ua-platform: "macOS"' \
+  --data-raw 'version=2.62.72&remark=fb' \
   --compressed"""
 
     code = convert_curl_to_python_request(curl_code)
