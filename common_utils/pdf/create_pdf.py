@@ -12,24 +12,33 @@ from common_utils.utils import gen_add_or_sub_questions
 
 class PDF(FPDF):
     def __init__(self,
-                 output_path,               # pdf文件保存路径
+                 pdf_path,                  # pdf文件保存路径
+                 font_dir=None,             # 中文字体库路径
                  max_lines_per_page=15,     # pdf页面最大行数
-                 footer_info="",            # 页脚信息
-                 header_info=""             # 页眉信息
+                 footer_info="小学数学——10以内的加法",    # 页脚信息
+                 header_info="小学数学"                 # 页眉信息
                  ):
         FPDF.__init__(self)
-        self.output_path = output_path
+        self.output_path = pdf_path
+        self.font_dir = font_dir
+        self.footer_info = footer_info
+        self.header_info = header_info
+        self.max_lines_per_page = max_lines_per_page
         self.load_fonts()
 
-    def load_fonts(self, font_dir="./fonts"):
-        font_files = os.listdir(font_dir)
+    def load_fonts(self):
+        if not self.font_dir:
+            return
+
+        font_files = os.listdir(self.font_dir)
 
         for font_file in font_files:
             if font_file.endswith("ttf"):
                 font_name = font_file.split(".")[0]
-                font_path = os.path.join(font_dir, font_file)
+                font_path = os.path.join(self.font_dir, font_file)
                 try:
                     self.add_font(font_name, '', font_path, True)
+                    self.fonts[font_name]["ttffile"] = font_path
                 except Exception as e:
                     print(e)
 
@@ -50,7 +59,7 @@ class PDF(FPDF):
         self.cell(80)
         self._set_text_color("blue")
         # Title
-        self.cell(30, 10, '小学数学', 0, 0, 'C')
+        self.cell(30, 10, self.header_info, 0, 0, 'C')
         self._set_text_color("black")
         # Line break
         self.ln(25)
@@ -67,7 +76,7 @@ class PDF(FPDF):
         self._set_text_color("blue")
 
         # Page number
-        self.cell(0, 10, '小学数学 —— 10以内的加法', 0, 0, 'C')
+        self.cell(0, 10, self.footer_info, 0, 0, 'C')
         self._set_text_color("black")
         self._set_draw_color("blue")
         self.line(50, 20, 195, 20)
@@ -125,17 +134,15 @@ class PDF(FPDF):
                 self.ln()
                 cur_lines += 1
             except Exception as e:
+                print(e)
                 pass
 
         return
 
 
 def main():
-    add_lst, sub_lst, mix_lst = gen_add_or_sub_questions(10)
-    # Instantiation of inherited class
-    pdf = PDF(output_path="test.pdf")
-    pdf.add_content(lines=add_lst[:25], column=2)
-    pdf.save()
+
+    return
 
 
 if __name__ == "__main__":
