@@ -254,8 +254,15 @@ def load_json_list_from_sheet(sheet):
         pass
     json_lst = []
     for row in rows:
-        values = [_eval_cell(it.value) for it in row]
+        values = []
+        for cell in row:
+            if cell.font.strike:    # 带有删除线
+                values.append(None)
+            else:
+                values.append(_eval_cell(cell.value))
+
         json_lst.append(values)
+        # values = [_eval_cell(it.value) for it in row]
 
     merged_cells = _get_merged_cells_from_sheet(sheet)
     for val, pos_lst in merged_cells.items():
@@ -339,7 +346,7 @@ def check_title(xlsx_path, necessary_titles, sheet_names=None):
 
 
 def _test():
-    xlsx_path = "../test.xlsx"
+    xlsx_path = "./test.xlsx"
     json_dct = load_json_list_from_xlsx(xlsx_path=xlsx_path)
     for sheet_name, json_lst in json_dct.items():
         save_json_list_into_xlsx(xlsx_path=xlsx_path, sheet_name=sheet_name, json_lst=json_lst)
