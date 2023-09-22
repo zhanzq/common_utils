@@ -17,20 +17,23 @@ import subprocess
 import random
 
 
-def gen_add_or_sub_questions(top=10):
+def gen_add_or_sub_questions(top=10, min_val=1):
     """
     随机生成N以内的加减法示例，如 0 + 10 = , 10 - 2 =
     :param top: 算术上限N，默认值为10
+    :param min_val: 算术下限，默认值为1
     :return: type, tuple(List, List, List), 返回所有可能的算术示例，分别为加法，减法，加减混合
     """
     add_lst = []
     sub_lst = []
     mix_lst = []
-    for c in range(10, 1, -1):
-        for a in range(c, -1, -1):
-            b = c - a
-            sub_lst.append(f"{c} - {a} = ")
-            add_lst.append(f"{a} + {b} = ")
+    for a in range(min_val, top+1):
+        for b in range(min_val, top+1):
+            if a + b > top:
+                break
+            c = a + b
+            sub_lst.append(f"{c:2d} — {a:2d} = ")
+            add_lst.append(f"{a:2d} + {b:2d} = ")
 
     mix_lst.extend(sub_lst)
     mix_lst.extend(add_lst)
@@ -39,6 +42,7 @@ def gen_add_or_sub_questions(top=10):
     random.shuffle(mix_lst)
 
     return add_lst, sub_lst, mix_lst
+
 
 class Context:
     """
