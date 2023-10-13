@@ -297,7 +297,8 @@ def _block_check_by_domain(semantics, domain):
     filtered = []
     for semantic in semantics:
         cur_domain = semantic.get("intent", "").lower()
-        if "block" in cur_domain and domain.lower() in cur_domain:
+        # 完全匹配检查
+        if cur_domain == f"block{domain.lower()}":
             filtered.append(semantic)
 
     return filtered
