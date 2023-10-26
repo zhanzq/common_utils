@@ -130,7 +130,8 @@ def get_dm_service_response(query, env="service", device="X20", simulation=True)
         }
     )
     headers = {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        "auth": "owen_19036365",
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
