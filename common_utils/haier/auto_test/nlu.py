@@ -96,6 +96,7 @@ def parse_nlu_response(json_resp):
 def get_dm_service_response(query, env="service", device="X20", simulation=True):
     """
     在特定环境中获取dm的执行结果
+    :param simulation: 是否模拟设备信息，默认为True，表示具有各种设备
     :param query: 输入语句
     :param env: 测试环境，test:验收, sim:仿真, service:生产, 默认为生产环境
     :param device: 主控设备，即语音入口
@@ -221,7 +222,7 @@ def _parse_dm_response_params(params):
 
 
 def main():
-    query = "打开三楼的电暖桌"
+    query = "酷打开蒸箱"
 
     # do nlu
     nlu_resp = get_nlu_service_response(query, env="test")
