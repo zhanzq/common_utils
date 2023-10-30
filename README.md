@@ -1,4 +1,10 @@
 # 常用工具包
+## version 1.3.1
+### updates
+1. 新增common_utils.web.parser模块，用于web网页的操作
+   + 支持文件资源的下载（支持代理设置）
+   + 支持网页解析
+
 ## version 1.3.0
 ### updates
 1. 新增common_utils.pdf.create_pdf模块，用于创建并写入pdf文档
