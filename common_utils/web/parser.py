@@ -57,7 +57,7 @@ class WEB:
         return
 
     def _get_item_by_text_in_div(self, text):
-        bs = BS(self.html)
+        bs = BS(self.html, markup="HTML")
         divs = bs.find_all("div")
         res = []
         for div in divs:
@@ -66,7 +66,7 @@ class WEB:
         return res
 
     def _get_item_by_text_in_li(self, text):
-        bs = BS(self.html)
+        bs = BS(self.html, markup="HTML")
 
         lis = bs.find_all("li")
 
@@ -103,7 +103,7 @@ class WEB:
     def get_item_by_href(self, href):
         if not self.html:
             self.download_web()
-        bs = BS(self.html)
+        bs = BS(self.html, markup="HTML")
         lst = bs.find_all("a")
         for it in lst:
             if it["href"] == href:
@@ -117,7 +117,7 @@ class WEB:
         if not self.html:
             self.download_web()
 
-        bs = BS(self.html)
+        bs = BS(self.html, markup="HTML")
 
         lst = bs.find_all("a", **attr)
         links = []
