@@ -1,13 +1,16 @@
 # 常用工具包
 ## version 1.3.1
 ### updates
-1. 新增common_utils.web.parser模块，用于web网页的操作
+1. 新增**common_utils.web.parser**模块，用于web网页的操作
    + 支持文件资源的下载（支持代理设置），download_file
    + 支持网页下载，download_web
    + 支持根据文本内容text查找相关网页元素，get_item_by_text，返回所有相关元素列表
    + 支持根据网页元素抽取相关链接，get_related_links(item, depth=5)，支持深度设置，默认为5
    + 支持根据相关链接抽取对应的\<a\>元素，get_item_by_href(href)
    + 支持根据元素属性抽取所有的链接，get_links_by_attr(**attr)
+2. 新增**pdf.read_pdf**模块， 
+   + 支持从pdf文件（主要是arxiv论文）中抽取正文
+   + 支持正文内容的预处理，如“合并合成词”，“过滤参考文献标记”等
 
 ## version 1.3.0
 ### updates
