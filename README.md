@@ -1,4 +1,12 @@
 # 常用工具包
+## version 1.3.2
+### updates
+1. 新增**common_utils.ner.convert**模块，用于格式化NER任务数据
+   
+2. 在已有模块**common_utils.text_io.txt**中，新增save_to_txt方法，用于保存list数据
+   + 支持保存列表数据到文本文件，如.txt, .tsv等
+   + 支持数据末尾自动添加必要的换行符
+
 ## version 1.3.1
 ### updates
 1. 新增**common_utils.web.parser**模块，用于web网页的操作

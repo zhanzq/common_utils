@@ -13,12 +13,29 @@ import copy
 
 
 @time_cost
-def save_to_jsonl(json_lst: list, jsonl_path: str, encoding: str='utf8'):
+def save_to_txt(data_lst: list, output_path: str, encoding: str = "utf8"):
+    """
+    save list into file, each line contains an element and with necessary newline
+    :param data_lst: list of data to write
+    :param output_path: file path to store list data, usually endswith ".txt"
+    :param encoding: data encoding, default "utf8"
+    :return:
+    """
+    with open(output_path, mode="a", encoding=encoding) as writer:
+        if not data_lst[0].endswith("\n"):
+            data_lst = [it + "\n" for it in data_lst]
+        writer.writelines(data_lst)
+
+    return
+
+
+@time_cost
+def save_to_jsonl(json_lst: list, jsonl_path: str, encoding: str = 'utf8'):
     """
     save json list into file, each line contains a dumped json object
     :param json_lst: list of json object
     :param jsonl_path: file path to store json objects, usually endswith ".jsonl"
-    :param encoding: data encoding, default 'utf8'
+    :param encoding: data encoding, default "utf8"
     :return:
     """
     with open(jsonl_path, "w", encoding=encoding) as writer:
@@ -31,7 +48,7 @@ def save_to_jsonl(json_lst: list, jsonl_path: str, encoding: str='utf8'):
 
 
 @time_cost
-def load_from_jsonl(jsonl_path: str, encoding: str='utf8'):
+def load_from_jsonl(jsonl_path: str, encoding: str = 'utf8'):
     """
     load json list from file, each line contains a dumped json object
     :param jsonl_path: type: str, file path storing json objects, usually endswith ".jsonl"
@@ -51,7 +68,7 @@ def load_from_jsonl(jsonl_path: str, encoding: str='utf8'):
 
 
 @time_cost
-def save_to_json(json_obj: dict, json_path: str, encoding: str='utf8'):
+def save_to_json(json_obj: dict, json_path: str, encoding: str = 'utf8'):
     """
     save json object into file
     :param json_obj: json object to store
@@ -68,7 +85,7 @@ def save_to_json(json_obj: dict, json_path: str, encoding: str='utf8'):
 
 
 @time_cost
-def load_from_json(json_path: str, encoding: str='utf8'):
+def load_from_json(json_path: str, encoding: str = 'utf8'):
     """
     load json object from file
     :param json_path: type: str, file path storing json objects, usually endswith ".jsonl"
@@ -88,7 +105,7 @@ def load_from_json(json_path: str, encoding: str='utf8'):
     return json_obj
 
 
-def save_to_tsv(json_lst: list, tsv_path: str, encoding: str='utf8'):
+def save_to_tsv(json_lst: list, tsv_path: str, encoding: str = 'utf8'):
     """
     save json list into file, each line contains a dumped json object
     :param json_lst: list of json object
@@ -107,7 +124,7 @@ def save_to_tsv(json_lst: list, tsv_path: str, encoding: str='utf8'):
                 print(e)
 
 
-def load_from_tsv(tsv_path: str, encoding: str='utf8'):
+def load_from_tsv(tsv_path: str, encoding: str = 'utf8'):
     """
     load json list from file, each line contains a dumped json object
     :param tsv_path: type: str, file path storing json objects, usually endswith ".tsv"
