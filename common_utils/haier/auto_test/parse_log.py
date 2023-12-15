@@ -55,14 +55,14 @@ def get_log_id(sn, env="test"):
     payload = {}
     headers = {}
 
-    for _ in range(10):
+    for _ in range(3):
         try:
             response = requests.request("GET", url, headers=headers, data=payload)
             log_id_ret = json.loads(response.text)
             log_id_map = _parse_log_id(log_id_ret)
             return log_id_map
         except TypeError:
-            time.sleep(5)
+            time.sleep(1)
 
     return {}
 
@@ -105,6 +105,8 @@ def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
         :param verbose: 是否打印详细信息, 默认不打印
         """
     log_id_map = get_log_id(sn, env)
+    if not log_id_map:
+        return None
     service_name = "dialog-system:NluReceiver"
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
@@ -265,6 +267,9 @@ def get_tpl_match_info_from_log(sn, env="test", verbose=False):
     :param verbose: 是否打印详细日志信息，默认为不打印
     """
     log_id_map = get_log_id(sn, env)
+    if not log_id_map:
+        return None
+
     service_name = "NluTemplate:nlu"
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
@@ -313,6 +318,9 @@ def block_check(sn, domain_lst, env="test", verbose=False):
     :param verbose: 是否打印详细日志信息，默认为不打印
     """
     log_id_map = get_log_id(sn, env)
+    if not log_id_map:
+        return None
+
     service_name = "NluTemplate:nlu"
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
@@ -374,6 +382,9 @@ def get_log_trace_info_from_log(sn, env="test", verbose=False):
     :param verbose: 是否打印日志信息，默认为不打印
     """
     log_id_map = get_log_id(sn, env)
+    if not log_id_map:
+        return None
+
     service_name = "dialog-system:LogTrace"
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
