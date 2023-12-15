@@ -1,4 +1,25 @@
 # 常用工具包
+## version 1.4.0
+### updates
+1. 新增**common_utils.text_io.word**模块
+   + 支持docx文档的读写操作
+   + 支持插入图片
+   + 支持读写表格数据, `insert_table(data_lst)`, `extract_table(table_idx)`
+   + 支持格式化文本，如字体设置`set_font(run, **args)`等
+   + 支持页面设置，`set_page(margin=(3.18, 3.18, 2.54, 2.54), column=1, column_space=0.5)`
+   + 支持插入新页面，`add_new_page()`
+   + 等等
+
+2. 新增**common_utils.poetry.poetry**模块，用于古诗文处理
+   + 继承`common_utils.text_io.word.Docx`
+   + 支持添加古诗标题，`add_poetry_title(title)`
+   + 支持添加古诗作者，`add_poetry_author(author)`
+   + 支持添加古诗正文，`add_poetry_content(content)`
+   + 支持添加古诗学习日期，`add_poetry_date(date)`
+   + 支持添加整首古诗信息，`add_poetry(poetry_info: dict)`
+   + 等等
+
+
 ## version 1.3.2
 ### updates
 1. 新增**common_utils.ner.convert**模块，用于格式化NER任务数据
