@@ -19,6 +19,8 @@
    + 支持添加整首古诗信息，`add_poetry(poetry_info: dict)`
    + 等等
 
+3. 字体大小对照表
+![img.png](img.png)
 
 ## version 1.3.2
 ### updates
