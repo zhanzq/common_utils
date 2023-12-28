@@ -105,17 +105,19 @@ def load_from_json(json_path: str, encoding: str = 'utf8'):
     return json_obj
 
 
-def save_to_tsv(json_lst: list, tsv_path: str, encoding: str = 'utf8'):
+def save_to_tsv(json_lst: list, tsv_path: str, encoding: str = 'utf8', with_key=False):
     """
     save json list into file, each line contains a dumped json object
     :param json_lst: list of json object
     :param tsv_path: file path to store json objects, usually endswith ".tsv"
     :param encoding: data encoding, default 'utf8'
+    :param with_key: restore the json key in the first line or not, default False, means not store keys
     :return:
     """
     with open(tsv_path, "w", encoding=encoding) as writer:
         col_name_lst = [it for it in json_lst[0].keys()]
-        writer.write("\t".join(col_name_lst) + "\n")
+        if with_key:
+            writer.write("\t".join(col_name_lst) + "\n")
         for json_obj in json_lst:
             try:
                 out_line = "\t".join([json_obj[key] for key in col_name_lst])
@@ -124,16 +126,26 @@ def save_to_tsv(json_lst: list, tsv_path: str, encoding: str = 'utf8'):
                 print(e)
 
 
-def load_from_tsv(tsv_path: str, encoding: str = 'utf8'):
+def load_from_tsv(tsv_path: str, encoding: str = 'utf8', with_keys=False, new_keys=None):
     """
     load json list from file, each line contains a dumped json object
     :param tsv_path: type: str, file path storing json objects, usually endswith ".tsv"
     :param encoding: data encoding, default 'utf8'
+    :param with_keys: the stored data with json item keys in the first line or not, default False,
+     means without keys restored
+    :param new_keys: the new keys of the json items, when **with_keys** is False, new_keys must not be None
     :return: json object list
     """
     json_lst = []
     with open(tsv_path, "r", encoding=encoding) as reader:
-        col_name_lst = reader.readline().strip().split("\t")
+        if with_keys:
+            col_name_lst = reader.readline().strip().split("\t")
+        else:
+            assert new_keys is not None, ("when the tsv file has no keys in the first line, "
+                                          "must provide new keys for the json item")
+        if new_keys:
+            col_name_lst = new_keys
+
         for line in reader:
             try:
                 values = line.strip().split("\t")
