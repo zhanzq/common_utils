@@ -22,6 +22,44 @@
 3. 字体大小对照表
 ![img.png](img.png)
 
+4. **common_utils.pdf.create_pdf**模块中新增功能
+   + 新增画线功能`draw_line(**kwargs)`, 支持`color`, `width`, `rect`, `x1, y1, x2, y2`, `dashed`设置
+     + `color`为RGB的tuple类型
+     + `width`为float类型
+     + `rect`为线条位置，无此字段时，可取`x1, y1, x2, y2`
+     + `dashed`为bool类型, default为False, 即实线
+   + 新增画框功能`draw_rect(**kwargs)`, 支持`color`, `width`, `rect`, `style`设置，同上
+   + 新增画汉字田字格功能`draw_char_cell(self, x0, y0, cell_size=41, color=(0, 150, 0))`
+     + `(x0, y0)`为田字格的左上角位置坐标
+     + `cell_size`为田字格大小，default为41磅
+     + `color`为田字格颜色，default为(0, 150, 0)，为墨绿色
+   + 新增画拼音格功能`draw_pinyin_cell(self, x0, y0, height=18, width=41, color=(0, 150, 0))`
+     + `(x0, y0)`为拼音格的左下角位置坐标，和下面对应的田字格坐标相同
+     + `height`为拼音格高度，default为18磅
+     + `width`为拼音格宽度，default为41磅，和田字格cell_size相同
+     + `color`为拼音格颜色，default为(0, 150, 0)，为墨绿色
+   + 新增画拼音+田字格页面功能`draw_char_pinyin_page(self, x0=46, y0=106, char_cell_size=41, pinyin_height=18, row_num=8, col_num=12)`
+     + `(x0, y0)`为田字格左上角起始位置
+     + `char_cell_size`为田字格大小，default为41磅
+     + `pinyin_height`为为拼音格高度，default为18磅
+     + `row_num`为田字格的列数，default为12
+     + `col_num`为田字格的行数，default为8
+   + 新增写入汉字及拼音内容`add_content(self, text_info)`
+     + `text_info`: 待写入的文本信息，包含`text, pos, font, color, size`等字段
+     + 输入示例：
+          ```json
+       {
+              "text": "初",
+              "pinyin": "chū",
+              "pos": [215, 104, 245, 147],
+              "font": "华文楷体",
+              "color": [135, 135, 135],
+              "size": 30
+          }
+       ```
+5. **common_utils.pdf.create_pdf**模块中，新增PDF子类`MathQuestionPDF`
+
+
 ## version 1.3.2
 ### updates
 1. 新增**common_utils.ner.convert**模块，用于格式化NER任务数据
