@@ -194,7 +194,7 @@ def get_tpl_service_response(query, env="dev"):
         'Content-Type': 'application/json'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = requests.request("POST", url, headers=headers, data=payload, timeout=2)
 
     json_resp = json.loads(response.text)
 
