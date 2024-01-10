@@ -59,7 +59,7 @@
        ```
 5. **common_utils.pdf.create_pdf**模块中，新增PDF子类`MathQuestionPDF`
 
-
+6. common_utils.pdf中新增枚举类型的颜色类color_v2.Color，主要包括常用颜色的RGB值
 ## version 1.3.2
 ### updates
 1. 新增**common_utils.ner.convert**模块，用于格式化NER任务数据
