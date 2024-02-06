@@ -6,9 +6,12 @@
 #
 
 
+import hashlib
 import time
 import json
 import requests
+
+from common_utils.const.web import USER_AGENT
 from common_utils.utils import format_string
 
 
@@ -31,6 +34,21 @@ def _parse_log_id(log_id_ret):
     return log_id_map
 
 
+def get_sign(url, timestamp):
+    """
+    生产环境的日志系统计算签名signature
+    :param url:
+    :param timestamp:
+    :return:
+    """
+    n = url.split("?")[0]
+    e = "b407eb2f-7ee5-44b2-afc8-780e82764185"
+    input_string = n + str(timestamp) + e
+    sign = hashlib.sha256(input_string.encode()).hexdigest()
+
+    return sign
+
+
 def get_log_id(sn, env="test"):
     """
     获取日志id信息
@@ -48,12 +66,18 @@ def get_log_id(sn, env="test"):
         url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getlogList"
     elif env == "sim":
         url_base = "https://aisim.haiersmarthomes.com/bomp-logdata-adapter/datalog/getlogList"
-    else:
+    elif env == "service":
         url_base = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getlogList"
 
     url = url_base + f"?startDate={date}+00:00&accept={sn}&pageNum=1&pageSize=30"
     payload = {}
-    headers = {}
+    timestamp = time.time_ns()//10**6
+    sign = get_sign(url=url, timestamp=str(timestamp))
+    headers = {
+        "sign": sign,
+        "timestamp": str(timestamp),
+        "user-agent": USER_AGENT
+    }
 
     for _ in range(3):
         try:
@@ -85,7 +109,7 @@ def parse_nlu_receiver_info_from_log(resp_nlu_receiver):
 def _parse_service_info(service_info):
     data = service_info.get("data", {})
     req = json.loads(data["reqBody"]) if "reqBody" in data else {}
-    param = req.get("args0", {})
+    param = req.get("args0", req)
     if "query" in param:
         query = param["query"]
     else:
@@ -149,12 +173,19 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
         url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
     elif env == "sim":
         url_base = "https://aisim.haiersmarthomes.com/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
-    else:
+    elif env == "service":
         url_base = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
 
     url = url_base + f"?id={log_id}&date={date}&sn={sn}"
     payload = {}
-    headers = {}
+    timestamp = time.time_ns()//10**6
+    sign = get_sign(url=url, timestamp=str(timestamp))
+
+    headers = {
+        "sign": sign,
+        "timestamp": str(timestamp),
+        "user-agent": USER_AGENT
+    }
 
     response = requests.request("GET", url, headers=headers, data=payload)
 
@@ -431,8 +462,8 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
 
 
 def main():
-    env = "test"
-    sn = "20230905192157661000725853"
+    env = "service"
+    sn = "t20240206145925940281423872"
     domain_lst = ["Dev.oven", ""]
     block_check(sn, domain_lst, env, verbose=True)
 
