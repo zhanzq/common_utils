@@ -12,7 +12,7 @@ import json
 def __parse_curl_code(curl_code):
     # replace format char
     curl_code = re.sub(string=curl_code, pattern="\s", repl=" ")
-    ptn = "(curl|-H|--header|--location|--data-raw|--data|--compressed)"
+    ptn = "(curl |-H |--header |--location |--data-raw |--data |--compressed)"
     items = re.split(string=curl_code, pattern=ptn)
 
     return items
