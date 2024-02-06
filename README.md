@@ -8,7 +8,8 @@
 3. 更新common_utils.haier.auto_test.parse_log模块：
    + 使用签名计算，实现海尔生产环境的日志解析
    + 签名算法为hashlib.sha256，计算内容为url的base部分，常量和时间戳
-
+4. 新增common_utils.algorithm.josephus模块：
+   + 算法`josephus(m, k)`，用于实现约瑟夫环问题，其中m为人数，k为最大报数
 
 ## version 1.4.0
 ### updates
