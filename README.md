@@ -5,6 +5,10 @@
    + 包括`USER_AGENT`，即请求头中的用户代理
 2. 新增common_utils.convert.tts模块：
    + TTS功能`youdao_english_tts(sentence, save_path=None)`，通过调用youdao api，将英文文本转换成mp3
+3. 更新common_utils.haier.auto_test.parse_log模块：
+   + 使用签名计算，实现海尔生产环境的日志解析
+   + 签名算法为hashlib.sha256，计算内容为url的base部分，常量和时间戳
+
 
 ## version 1.4.0
 ### updates
