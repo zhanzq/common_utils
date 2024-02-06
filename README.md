@@ -1,4 +1,11 @@
 # 常用工具包
+## version 1.4.1
+### updates
+1. 新增common_utils.const.web模块：
+   + 包括`USER_AGENT`，即请求头中的用户代理
+2. 新增common_utils.convert.tts模块：
+   + TTS功能`youdao_english_tts(sentence, save_path=None)`，通过调用youdao api，将英文文本转换成mp3
+
 ## version 1.4.0
 ### updates
 1. 新增**common_utils.text_io.word**模块
