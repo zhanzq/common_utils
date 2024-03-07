@@ -121,6 +121,31 @@ def _parse_service_info(service_info):
     return query, resp
 
 
+def get_query_by_sn(sn, env="test", verbose=False):
+    """
+        获取dialog-system:NluReceiver服务的结果
+        :param sn: 请求的sn号
+        :param env: 请求的执行环境, default="test"
+        :param verbose: 是否打印详细信息, 默认不打印
+        """
+    log_id_map = get_log_id(sn, env)
+    if not log_id_map:
+        return None
+    service_name = "dialog-system:NluReceiver"
+    service_info = get_service_info(sn, log_id_map, service_name, env)
+    query, _ = _parse_service_info(service_info)
+    if verbose:
+        print_info = {
+            "env": env,
+            "sn": sn,
+            "query": query
+        }
+        print_info = json.dumps(print_info, indent=4, ensure_ascii=False)
+        print(print_info)
+
+    return query
+
+
 def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
     """
         获取dialog-system:NluReceiver服务的结果
