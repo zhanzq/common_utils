@@ -450,10 +450,11 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
         child_semantics = semantics[0]["childSemantics"]
         nlu_info = [parse_nlu_info_from_log(it) for it in child_semantics]
 
-    # filter unimportant semantics
-    nlu_info = rm_extract_domain(nlu_info)
-    nlu_info = rm_internal_command(nlu_info)
     if nlu_info:
+        # filter unimportant semantics
+        nlu_info = rm_extract_domain(nlu_info)
+        nlu_info = rm_internal_command(nlu_info)
+
         print_info = json.dumps(nlu_info, indent=4, ensure_ascii=False)
         if verbose:
             print(print_info)
