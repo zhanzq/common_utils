@@ -6,7 +6,7 @@
 import os
 
 from docx import Document
-from docx.shared import Pt, Cm
+from docx.shared import Pt, Cm, RGBColor
 from docx.oxml.ns import qn
 
 
@@ -46,13 +46,14 @@ class Docx:
     def set_font(self, run, **args):
         font_size = args.get("size", 20)
         font_name = args.get("name", "华文楷体")
-
+        r, g, b = args.get("color", (0, 0, 0))
         if type(font_size) is str:
             font_size = self.font_sz_map.get(font_size, 20)
 
         run.font.name = font_name
         run._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
         run.font.size = Pt(font_size)
+        run.font.color.rgb = RGBColor(r, g, b)
         run.bold = args.get("bold", False)
         run.italic = args.get("italic", False)
 
@@ -77,6 +78,17 @@ class Docx:
 
             cols = section._sectPr.xpath('./w:cols')[0]
             cols.set(qn('w:num'), '2')
+
+        return
+
+    def add_content(self, **kwargs):
+        assert "content" in kwargs, "must supply content"
+        content = kwargs.get("content")
+        alignment = kwargs.get("alignment", 1)
+        paragraph = self.doc.add_paragraph()
+        paragraph.alignment = alignment
+        run = paragraph.add_run(content)
+        self.set_font(run, **kwargs)
 
         return
 
