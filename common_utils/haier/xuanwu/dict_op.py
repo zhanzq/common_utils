@@ -56,12 +56,12 @@ def search_word_in_xuanwu_dict(dict_code, word):
     else:
         for normed_word in word_dct:
             synonym = word_dct[normed_word]["synonym"]
-            if synonym and word in synonym:
+            if synonym and word in synonym.split(","):
                 return word_dct[normed_word]
 
-        for normed_word in word_dct:
-            if word in normed_word:
-                return word_dct[normed_word]
+        # for normed_word in word_dct:
+        #     if word in normed_word:
+        #         return word_dct[normed_word]
 
     return None
 
@@ -147,11 +147,12 @@ def main():
     print(json.dumps(word_dct, indent=4, ensure_ascii=False))
 
     # search word in dict
-    found = search_word_in_xuanwu_dict(dict_code=dict_code, word="设置为")
+    search_word = "设置"
+    found = search_word_in_xuanwu_dict(dict_code=dict_code, word=search_word)
     if found:
         print(json.dumps(found, indent=4, ensure_ascii=False))
     else:
-        print(found)
+        print(f"在字典 '{dict_code}' 中未找到 '{search_word}'")
 
     # add word into dict
     word = "设为"
