@@ -1,4 +1,12 @@
 # 常用工具包
+## version 1.4.2
+### updates
+1. 新增common_utils.haier.xuanwu.dict_op模块：
+   + 支持玄武字典的查询`get_word_dict_in_xuanwu(dict_code)`
+   + 支持向玄武字典中添加词语`add_word_to_xuanwu_dict(dict_code, word, synonym="")`
+   + 支持搜索玄武字典中的词语`search_word_in_xuanwu_dict(dict_code, word)`
+   + 支持编辑玄武字典中词语的同义词`edit_xuanwu_dict(dict_code, word, synonym)`
+
 ## version 1.4.1
 ### updates
 1. 新增common_utils.const.web模块：
