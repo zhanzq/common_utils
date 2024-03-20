@@ -287,7 +287,7 @@ def rm_block_semantics(semantics):
             block_domain.add(intent[5:])
 
     for semantic in semantics:
-        domain = semantics.get("domain", "")
+        domain = semantic.get("domain", "")
         if "Block" not in domain and domain not in block_domain:
             filtered.append(semantic)
 
