@@ -280,8 +280,15 @@ def rm_block_semantics(semantics):
     :return:
     """
     filtered = []
+    block_domain = set()
     for semantic in semantics:
-        if "block" not in semantic.get("domain", "").lower():
+        intent = semantic.get("intent", "")
+        if intent.startswith("Block"):
+            block_domain.add(intent[5:])
+
+    for semantic in semantics:
+        domain = semantics.get("domain", "")
+        if "Block" not in domain and domain not in block_domain:
             filtered.append(semantic)
 
     return filtered
