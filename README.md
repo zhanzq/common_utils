@@ -7,6 +7,10 @@
    + 支持搜索玄武字典中的词语`search_word_in_xuanwu_dict(dict_code, word)`
    + 支持编辑玄武字典中词语的同义词`edit_xuanwu_dict(dict_code, word, synonym)`
    + 支持向玄武系统中新增字典`add_word_dict_in_xuanwu(dict_code, dict_name, parent_code=0, dict_type="ENUM", dict_category="OTHER")`
+2. 更新获取query信息的方法
+3. 新增获取云端设备执行结果信息（nlpResult）的方法
+   + `get_device_exec_result(sn, env="test", verbose=True)`
+
 
 ## version 1.4.1
 ### updates

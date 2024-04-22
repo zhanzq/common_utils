@@ -111,9 +111,10 @@ def _parse_service_info(service_info):
     req = json.loads(data["reqBody"]) if "reqBody" in data else {}
     param = req.get("args0", req)
     if "query" in param:
-        query = param["query"]
+        query = f'{param.get("rawQuery")} -> {param["query"]}'
     else:
-        query = param.get("userInput", None)
+        query = f'{param.get("rawQuery")} -> {param.get("userInput")}'
+    # context = param.get("contextQuery")
 
     resp = json.loads(data["response"]) if "response" in data else None
     resp = resp.get("resp", resp)
@@ -461,6 +462,45 @@ def get_log_trace_info_from_log(sn, env="test", verbose=False):
         print(log_trace_info)
 
     return log_trace_info
+
+
+def get_device_exec_result(sn, env="test", verbose=True):
+    """
+    获取DeviceExecServiceImpl:deviceExecProcess服务的结果
+    :param sn: 请求的sn号
+    :param env: 请求的执行环境, default="test"
+    :param verbose: 是否打印日志信息，默认为不打印
+    """
+    log_id_map = get_log_id(sn=sn, env=env)
+    service_name = "DeviceExecServiceImpl:deviceExecProcess"
+    service_id = log_id_map.get(service_name)
+    print(format_string(f"deviceExecProcess info: env={env}, sn={sn}"))
+
+    date_str = sn[1:9] if sn[0] == "t" else sn[:8]
+    base_url = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail?"
+    url = base_url + f"id={service_id}&date={date_str}&sn={sn}"
+    timestamp = time.time_ns() // 10 ** 6
+    sign = get_sign(url=url, timestamp=str(timestamp))
+    headers = {
+        "accept-language": "zh-CN,zh;q=0.9",
+        "sign": sign,
+        "timestamp": str(timestamp),
+        "user-agent": USER_AGENT
+    }
+    method = "GET"
+    payload = ""
+
+    response = requests.request(method, url, headers=headers, data=payload)
+    obj_resp = json.loads(response.text)
+
+    data = obj_resp.get("data")
+    req = json.loads(data.get("reqBody")).get("args0")
+    device_exec_result = req.get("nlpResult").get("results")
+
+    if verbose:
+        print(json.dumps(device_exec_result, indent=4, ensure_ascii=False))
+
+    return device_exec_result
 
 
 def get_do_nlu_info_from_log(sn, env="test", verbose=False):
