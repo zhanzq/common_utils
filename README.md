@@ -10,6 +10,8 @@
 2. 更新获取query信息的方法
 3. 新增获取云端设备执行结果信息（nlpResult）的方法
    + `get_device_exec_result(sn, env="test", verbose=True)`
+4. 新增加载模拟设备列表功能
+   + `load_simulation_devices(sim_device_path=None)`
 
 
 ## version 1.4.1

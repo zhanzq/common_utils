@@ -8,6 +8,7 @@
 import json
 import requests
 from common_utils.haier.auto_test.parse_log import get_semantics_info
+from common_utils.text_io.txt import load_from_json
 
 
 def get_nlu_service_response(query, env="local", device="X20"):
@@ -94,6 +95,22 @@ def parse_nlu_response(json_resp):
     return nlu_info
 
 
+def load_simulation_devices(sim_device_path=None):
+    """
+    加载模拟的设备信息
+    :param sim_device_path: 模拟设备信息存储文件路径
+    :return:
+    """
+    if sim_device_path is None:
+        sim_device_path = "/Users/zhanzq/gitProjects/common_utils/common_utils/haier/auto_test/simulation_devices.json"
+
+    devices = load_from_json(json_path=sim_device_path)
+    lst = [f"{it['id']}|{it['name']}|{it['type']}|{it['floor']}|{it['room']}|{it['state']}" for it in devices]
+    sim_devices = "#".join(lst)
+
+    return sim_devices
+
+
 def get_dm_service_response(query, env="service", device="X20", simulation=True):
     """
     在特定环境中获取dm的执行结果
@@ -108,26 +125,18 @@ def get_dm_service_response(query, env="service", device="X20", simulation=True)
         "sim": "https://aisim.haiersmarthomes.com/dialog-system/v2/dialog",
         "service": "https://aiservice.haier.net/dialog-system/v2/dialog"
     }[env]
+    simulation_devices = load_simulation_devices()
     payload = json.dumps(
         {
             "deviceType": device,
-            "userId": "3452436347",
             "userInput": query,
             "otherParams": {
                 "simulation": simulation,
-                "neednlp": "yes",
-                "rewakeStat": "",
-                "multiDialog": "no",
-                "specialNlp2": "yes",
-                "screenState": "",
-                "addQuestion": False,
-                "needcontent": True,
-                "isQuitMultContinueDialog": "no",
-                "runStatus": "",
-                "isMultiContinueDialog": "no",
-                "agcKey": False,
-                "forwardPass": False
+                "simulationDevices": simulation_devices,
+                "familyId": "813174236437000000",
+                "dotId": "98FC8485A029",
             },
+            "userId": "3452436347",
             "masterDeviceId": "BOX00002123sd1111"
         }
     )
