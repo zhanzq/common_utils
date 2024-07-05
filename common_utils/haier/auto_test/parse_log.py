@@ -69,7 +69,7 @@ def get_log_id(sn, env="test"):
     elif env == "service":
         url_base = "https://aiservice.haier.net/bomp-logdata-adapter/datalog/getlogList"
 
-    url = url_base + f"?startDate={date}+00:00&accept={sn}&pageNum=1&pageSize=30"
+    url = url_base + f"?startDate={date}+00:00&accept={sn}&pageNum=1&pageSize=100"
     payload = {}
     timestamp = time.time_ns()//10**6
     sign = get_sign(url=url, timestamp=str(timestamp))
@@ -219,33 +219,64 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
     return service_info
 
 
-def get_semantics(resp_obj, clean=True):
+def get_semantics(resp_obj,
+                  remove_block_template=True,
+                  remove_block_nlu=True,
+                  remove_block_corpus=True,
+                  remove_block_ccg=True,
+                  remove_block_kg=True,
+                  remove_block_ice_nlu=True,
+                  remove_extract_domain=True,
+                  remove_internal_command=True):
     """
     获取服务（如nlu, dm, template等）返回的结果中的semantics信息，并进行过滤
+    :param remove_block_template: 过滤不必要的BlockTemplate, 默认为True
+    :param remove_block_nlu: 过滤不必要的BlockNLU, 默认为True
+    :param remove_block_corpus: 过滤不必要的BlockCorpus, 默认为True
+    :param remove_block_ccg: 过滤不必要的BlockCCG, 默认为True
+    :param remove_block_kg: 过滤不必要的BlockKg, 默认为True
+    :param remove_block_ice_nlu: 过滤不必要的BlockIceNlu, 默认为True
+    :param remove_extract_domain: 过滤不必要的Extract*, 默认为True
+    :param remove_internal_command: 过滤不必要InternalCommand, 默认为True
     :param resp_obj: 服务返回的json格式数据
-    :param clean: 过滤不必要的类型，如Block类，Internal类等，默认为True
     :return:
     """
     if not resp_obj or "semantics" not in resp_obj or not resp_obj["semantics"]:
         return []
 
     semantics = []
-    if clean:
-        for item in resp_obj["semantics"]:
-            if not item or "childSemantics" not in item or not item["childSemantics"]:
-                continue
+    for item in resp_obj["semantics"]:
+        if not item or "childSemantics" not in item or not item["childSemantics"]:
+            continue
 
-            child_semantics = item["childSemantics"]
-            child_semantics = rm_block_semantics(child_semantics)
-            child_semantics = rm_internal_command(child_semantics)
+        child_semantics = item["childSemantics"]
+        if remove_block_template:
+            child_semantics = rm_block_template(child_semantics)
+        if remove_block_nlu:
+            child_semantics = rm_block_nlu(child_semantics)
+        if remove_block_corpus:
+            child_semantics = rm_block_corpus(child_semantics)
+        if remove_block_ccg:
+            child_semantics = rm_block_ccg(child_semantics)
+        if remove_block_kg:
+            child_semantics = rm_block_kg(child_semantics)
+        if remove_block_ice_nlu:
+            child_semantics = rm_block_ice_nlu(child_semantics)
+        if remove_extract_domain:
             child_semantics = rm_extract_domain(child_semantics)
-            semantics.extend(child_semantics)
+        if remove_internal_command:
+            child_semantics = rm_internal_command(child_semantics)
+
+        semantics.extend(child_semantics)
 
     return semantics
 
 
-def get_semantics_info(resp_obj):
-    semantics = get_semantics(resp_obj)
+def get_semantics_info(resp_obj, remove_block_template=True, remove_block_nlu=True):
+    semantics = get_semantics(resp_obj,
+                              remove_block_template=remove_block_template,
+                              remove_block_nlu=remove_block_nlu,
+                              )
     channel = resp_obj["retChannel"]
     if channel == "nluTemplate":
         semantics_info = [_parse_tpl_match_semantic(it) for it in semantics]
@@ -274,22 +305,129 @@ def _parse_tpl_match_semantic(child_semantic):
     return simple_semantics
 
 
-def rm_block_semantics(semantics):
+def rm_block_semantics(semantics, remove_nlu=True):
     """
     过滤nlu_info中的Block类语义信息，如**BlockTemplate**
     :param semantics: 待过滤的语义信息
+    :param remove_nlu: 是否去除BlockNLU语义, 默认去除BlockNLU
     :return:
     """
     filtered = []
     block_domain = set()
     for semantic in semantics:
         intent = semantic.get("intent", "")
+        domain = semantic.get("domain", "")
         if intent.startswith("Block"):
-            block_domain.add(intent[5:])
+            if not remove_nlu and domain.startswith("BlockNLU"):
+                pass
+            else:
+                block_domain.add(intent[5:])
 
     for semantic in semantics:
         domain = semantic.get("domain", "")
         if "Block" not in domain and domain not in block_domain:
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_template(semantics):
+    """
+    过滤nlu_info中的BlockTemplate类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+    block_domain = set()    # 模板禁掉的领域
+    for semantic in semantics:
+        intent = semantic.get("intent", "")
+        domain = semantic.get("domain", "")
+        if domain == "BlockTemplate":
+            block_domain.add(intent[5:])
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockTemplate" and domain not in block_domain:
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_nlu(semantics):
+    """
+    过滤nlu_info中的BlockNLU类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockNLU":
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_corpus(semantics):
+    """
+    过滤nlu_info中的BlockCorpus类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockCorpus":
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_ccg(semantics):
+    """
+    过滤nlu_info中的BlockCCG类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockCCG":
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_kg(semantics):
+    """
+    过滤nlu_info中的BlockKg类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockKg":
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_ice_nlu(semantics):
+    """
+    过滤nlu_info中的BlockIceNlu类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockIceNlu":
             filtered.append(semantic)
 
     return filtered
@@ -345,7 +483,7 @@ def get_tpl_match_info_from_log(sn, env="test", verbose=False):
         child_semantics = semantics[0]["childSemantics"]
         simple_semantics = [_parse_tpl_match_semantic(it) for it in child_semantics]
 
-    simple_semantics = rm_block_semantics(simple_semantics)
+    simple_semantics = rm_block_semantics(simple_semantics, remove_nlu=False)
     simple_semantics = rm_extract_domain(simple_semantics)
     simple_semantics = rm_internal_command(simple_semantics)
     if simple_semantics:
@@ -365,9 +503,10 @@ def _block_check_by_domain(semantics, domain):
     """
     filtered = []
     for semantic in semantics:
+        category = semantic.get("category", "")
         cur_domain = semantic.get("intent", "").lower()
         # 完全匹配检查
-        if cur_domain == f"block{domain.lower()}":
+        if category == "BlockTemplate" and cur_domain == f"block{domain.lower()}":
             filtered.append(semantic)
 
     return filtered
@@ -427,7 +566,7 @@ def parse_nlu_info_from_log(child_semantics):
     }
     """
     slots = child_semantics.get("slots", [])
-    slots = {it["name"]: it.get("value", None) for it in slots}
+    slots = {it.get("name", None): it.get("value", None) for it in slots}
     nlu_info = {
         "domain": child_semantics.get("domain", None),
         "intent": child_semantics.get("intent", None),
