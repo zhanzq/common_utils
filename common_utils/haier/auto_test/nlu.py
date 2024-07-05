@@ -133,11 +133,11 @@ def get_dm_service_response(query, env="service", device="X20", simulation=True)
             "otherParams": {
                 "simulation": simulation,
                 "simulationDevices": simulation_devices,
-                "familyId": "813174236437000000",
-                "dotId": "98FC8485A029",
+                "familyId": "test_zzq",
+                "dotId": "test_zzq",
             },
-            "userId": "3452436347",
-            "masterDeviceId": "BOX00002123sd1111"
+            "userId": "test_zzq",
+            "masterDeviceId": "test_zzq"
         }
     )
     headers = {
@@ -232,16 +232,18 @@ def _parse_dm_response_params(params):
 
 
 def main():
-    query = "酷打开蒸箱"
+    query = "帮我煮果茶10分钟"
+
+    # do dm
+    dm_resp = get_dm_service_response(query, env="test")
+    dm_info = parse_dm_response(dm_resp)
+    print(f"dm_info: \n{dm_info}\n")
 
     # do nlu
     nlu_resp = get_nlu_service_response(query, env="test")
     nlu_info = parse_nlu_response(nlu_resp)
     print(f"nlu_info: \n{nlu_info}\n")
 
-    dm_resp = get_dm_service_response(query, env="sim")
-    dm_info = parse_dm_response(dm_resp)
-    print(f"dm_info: \n{dm_info}\n")
     return
 
 
