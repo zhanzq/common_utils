@@ -1,4 +1,17 @@
 # 常用工具包
+## version 1.4.3
+### updates
+1. 在common_utils.const.web中新增玄武平台的验收环境cookie
+2. 更新common_utils.haier.auto_test.parse_log模块
+   + 解析日志时，默认过滤不必要的BlockTemplate等semantics
+   + rm_block_semantics时，默认不删除BlockNLU语义信息 
+   + 新增rm_block_template, rm_block_nlu, rm_block_corpus等功能，单独处理各种不必要的阻塞意图
+3. 新增common_utils.haier.auto_deploy.xuanwu模块，支持
+   + 自动增加模板
+   + 开发、验收及仿真环境自动部署
+   + 验收环境数据更新下载
+   + 领域同步到仿真
+
 ## version 1.4.2
 ### updates
 1. 新增common_utils.haier.xuanwu.dict_op模块：
