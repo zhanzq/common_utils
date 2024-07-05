@@ -9,7 +9,7 @@ import time
 import requests
 from urllib.parse import quote
 from common_utils.text_io.txt import load_from_json, save_to_json
-from common_utils.const.web import USER_AGENT, COOKIE_XUANWU_DEV
+from common_utils.const.web import USER_AGENT, COOKIE_XUANWU_DEV, COOKIE_XUANWU_TEST
 
 
 class XuanWu:
@@ -77,7 +77,38 @@ class XuanWu:
         if data_file:
             output_path = self._download_data_file_from_xuanwu(data_file)
             print(f"store file {data_file} into {output_path}")
+            return obj_resp, output_path
+        else:
+            return obj_resp, None
 
+    @staticmethod
+    def import_additional_data_into_test(data_path):
+        """
+        导入新增数据到验收环境，数据包括模板和字典
+        :param data_path: 新增数据文件
+        :return:
+        """
+        url = 'https://aitest.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/import'
+
+        headers = {
+            "Cookie": COOKIE_XUANWU_TEST,
+            "User-Agent": USER_AGENT,
+            "X-Requested-With": "XMLHttpRequest"
+        }
+
+        file_name = data_path.split("/")[-1]
+        reader = open(data_path, "rb")
+        files = {
+            'file': (file_name, reader, 'application/octet-stream')
+        }
+        try:
+            response = requests.post(url, headers=headers, files=files)
+            print("import data into test finished!")
+            print(response.text)
+        except Exception as e:
+            print(e)
+
+        reader.close()
         return
 
     def get_domain_intent_to_id(self):
