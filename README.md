@@ -1,4 +1,10 @@
 # 常用工具包
+## version 1.4.4
+### updates
+1. 更新common_utils.haier.auto_test.parse_log模块
+   + 新增get_do_nlp_analysis_info_from_log功能，解析得到nlp的最终输出结果，给到云端
+
+
 ## version 1.4.3
 ### updates
 1. 在common_utils.const.web中新增玄武平台的验收环境cookie

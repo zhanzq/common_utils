@@ -111,9 +111,9 @@ def _parse_service_info(service_info):
     req = json.loads(data["reqBody"]) if "reqBody" in data else {}
     param = req.get("args0", req)
     if "query" in param:
-        query = f'{param.get("rawQuery")} -> {param["query"]}'
+        query = f'{param.get("rawQuery", param.get("rawInput"))} -> {param["query"]}'
     else:
-        query = f'{param.get("rawQuery")} -> {param.get("userInput")}'
+        query = f'{param.get("rawQuery", param.get("rawInput"))} -> {param.get("userInput")}'
     # context = param.get("contextQuery")
 
     resp = json.loads(data["response"]) if "response" in data else None
@@ -671,6 +671,33 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
             print(print_info)
 
     return nlu_info
+
+
+def get_do_nlp_analysis_info_from_log(sn, env="test", verbose=False):
+    """
+    获取dialog-system:doNlpAnalysis服务的结果
+    :param sn: 请求的sn号
+    :param env: 请求的执行环境, default="test"
+    :param verbose: 是否打印日志信息，默认为不打印
+    """
+    log_id_map = get_log_id(sn, env)
+    service_name = "dialog-system:doNlpAnalysis"
+    service_info = get_service_info(sn, log_id_map, service_name, env)
+    query, resp = _parse_service_info(service_info)
+    print(format_string(f"do_nlp_analysis info: env={env}, query={query}"))
+
+    data = resp.get("data")
+    nlp_analysis_info = {
+        "nlpVersion": data.get("nlpVersion"),
+        "nlp_response": data.get("response"),
+        "results": data.get("results")
+    }
+
+    print_info = json.dumps(nlp_analysis_info, indent=4, ensure_ascii=False)
+    if verbose:
+        print(print_info)
+
+    return nlp_analysis_info
 
 
 def main():
