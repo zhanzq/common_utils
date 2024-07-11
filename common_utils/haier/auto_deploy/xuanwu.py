@@ -115,11 +115,12 @@ class XuanWu:
         # 加载domain_intent_to_id映射表
         return load_from_json(self.domain_intent_to_id_path)
 
-    def get_intent_info(self, domain, intent):
+    def get_intent_info(self, domain, intent, verbose=True):
         """
         获取intent所有信息
         :param domain: 意图所属的领域代码
         :param intent: 意图代码
+        :param verbose: 是否打印详细的日志信息，默认打印
         :return: slot_info, tpl_info
         """
         intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
@@ -127,7 +128,7 @@ class XuanWu:
             return None, None
 
         intent_info = self._get_detail_intent_info(intent_id)
-        slot_info = parse_slot_info(intent_info)
+        slot_info = parse_slot_info(intent_info, verbose=verbose)
         tpl_info = parse_template_lst(intent_info)
 
         return slot_info, tpl_info
@@ -496,6 +497,7 @@ def parse_slot_info(intent_info, verbose=True):
     for item in detail_info:
         slot_code = item["slotCode"]
         slot = {
+            "id": item["id"],
             "slotName": item["slotName"],
             "dictCode": item["dictCode"],
             "must": item["must"],
