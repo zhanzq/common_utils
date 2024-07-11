@@ -2,8 +2,8 @@
 ## version 1.4.4
 ### updates
 1. 更新common_utils.haier.auto_test.parse_log模块
-   + 新增get_do_nlp_analysis_info_from_log功能，解析得到nlp的最终输出结果，给到云端
-
+   + 新增`get_do_nlp_analysis_info_from_log`功能，解析得到nlp的最终输出结果，给到云端
+   + 新增`get_device_lst(sn, env="test", by_type=True)`功能，获取用户的设备列表信息
 
 ## version 1.4.3
 ### updates

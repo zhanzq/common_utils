@@ -10,9 +10,188 @@ import hashlib
 import time
 import json
 import requests
+import yaml
 
 from common_utils.const.web import USER_AGENT
 from common_utils.utils import format_string
+
+
+def json_to_yaml(data):
+    stra = json.dumps(data)
+    dyaml = yaml.load(stra, Loader=yaml.FullLoader)
+
+    return dyaml
+
+
+def get_device_lst(sn, env="test", by_type=True):
+    """
+    获取用户的设备列表信息
+    :param sn: 请求的sn
+    :param env: 请求环境，test/sim/service
+    :param by_type: 是否按设备类型返回设备列表，默认为True
+    :return: master_device_info: 主控设备信息, device_info：设备列表分类的yaml格式, device_lst：详细的设备列表信息
+    """
+    log_id_map = get_log_id(sn=sn, env=env)
+    service_name = "DataCenterDubboServiceImpl:dateResult"
+    resp_obj = get_service_info(sn=sn, log_id_map=log_id_map, service_name=service_name, env=env)
+    resp = json.loads(resp_obj["data"]["response"])
+    rooms = resp["roomResponse"]
+    device_lst = rooms.get("deviceRoomInfos", [])
+    master_device_id = resp_obj.get("data").get("deviceId")
+    master_device_info = _get_master_device_info(master_device_id=master_device_id, device_lst=device_lst)
+
+    device_infos = []
+    for device in device_lst:
+        device_info = parse_device_info(device)
+        device_infos.append(device_info)
+
+    device_infos.sort(key=lambda it: (it["floor"], it["room"], it["type"], it["name"]))
+
+    device_mp = _convert_to_device_map_by_type(device_infos) if by_type \
+        else _convert_to_device_map_by_floor(device_infos)
+    print("主控信息：")
+    print(master_device_info)
+
+    print("\n\n设备列表信息：")
+    device_info = _print_device_info(device_mp, by_yaml=True)
+
+    return master_device_info, device_info, device_lst
+
+
+def process_integratedstove(device_info):
+    """
+    处理集成灶的设备信息，给出型号，分腔/一体机
+    :param device_info: 所有的设备信息
+    :return: device_info
+    """
+    device_type = device_info.get("deviceType")
+    name = device_info.get("deviceName")
+    if device_type == "IntegratedStove":
+        device_code = device_info.get("deviceCode")
+        if device_code.startswith("3F006"):
+            name += " (蒸烤一体机)"
+        elif device_code.startswith("3F007"):
+            name += " (分腔蒸烤箱)"
+        device_info["deviceName"] = name
+
+    return device_info
+
+
+def parse_device_info(device_info):
+    """
+    解析设备信息，抽取简要的设备信息
+    :param device_info:
+    :return:
+    """
+    process_integratedstove(device_info)
+    floor = device_info.get("floor", "")
+    room = device_info.get("room", "")
+    name = device_info.get("deviceName")
+    device_type = device_info.get("deviceType")
+
+    out_info = {
+        "floor": floor,
+        "room": room,
+        "name": name,
+        "type": device_type
+    }
+
+    return out_info
+
+
+def _get_master_device_info(master_device_id, device_lst):
+    """
+    获取主控设备信息
+    :param master_device_id:
+    :param device_lst:
+    :return: master_device_info, str
+    """
+    for device in device_lst:
+        device_id = device.get("deviceId")
+        if master_device_id == device_id:
+            master_device_info = parse_device_info(device)
+
+            return master_device_info
+
+    return None
+
+
+def _convert_to_device_map_by_floor(device_infos):
+    """
+    按楼层分类设备信息
+    :param device_infos:
+    :return: device_map
+    """
+    device_mp = {}
+    for device_info in device_infos:
+        floor = device_info.get("floor")
+        room = device_info.get("room")
+        _type = device_info.get("type")
+        name = device_info.get("name")
+        if floor not in device_mp:
+            device_mp[floor] = {}
+        if room not in device_mp[floor]:
+            device_mp[floor][room] = {}
+        if _type not in device_mp[floor][room]:
+            device_mp[floor][room][_type] = []
+
+        device_mp[floor][room][_type].append(name)
+
+    for floor in device_mp:
+        for room in device_mp[floor]:
+            for _type in device_mp[floor][room]:
+                device_mp[floor][room][_type].sort()
+                device_mp[floor][room][_type] = ", ".join(device_mp[floor][room][_type])
+
+    return device_mp
+
+
+def _convert_to_device_map_by_type(device_infos):
+    """
+    按类型分类设备信息
+    :param device_infos:
+    :return: device_map
+    """
+    device_mp = {}
+    for device_info in device_infos:
+        floor = device_info.get("floor")
+        room = device_info.get("room")
+        _type = device_info.get("type")
+        name = device_info.get("name")
+        if _type not in device_mp:
+            device_mp[_type] = {}
+        if floor not in device_mp[_type]:
+            device_mp[_type][floor] = {}
+        if room not in device_mp[_type][floor]:
+            device_mp[_type][floor][room] = []
+
+        device_mp[_type][floor][room].append(name)
+
+    for _type in device_mp:
+        for floor in device_mp[_type]:
+            for room in device_mp[_type][floor]:
+                device_mp[_type][floor][room].sort()
+                device_mp[_type][floor][room] = ", ".join(device_mp[_type][floor][room])
+
+    return device_mp
+
+
+def _print_device_info(device_mp, by_yaml=False):
+    """
+    打印设备信息
+    :param device_mp:
+    :param by_yaml: 是否按yaml格式，默认为False, 即json格式
+    :return:
+    """
+    if by_yaml:
+        s = json_to_yaml(device_mp)
+        json_str = yaml.dump(s, indent=4, allow_unicode=True)
+    else:
+        json_str = json.dumps(device_mp, indent=4, ensure_ascii=False)
+
+    print(json_str)
+
+    return json_str
 
 
 # 解析日志信息
@@ -124,7 +303,7 @@ def _parse_service_info(service_info):
 
 def get_query_by_sn(sn, env="test", verbose=False):
     """
-        获取dialog-system:NluReceiver服务的结果
+        获取dialog-system:doNlpAnalysis服务的结果
         :param sn: 请求的sn号
         :param env: 请求的执行环境, default="test"
         :param verbose: 是否打印详细信息, 默认不打印
@@ -132,7 +311,7 @@ def get_query_by_sn(sn, env="test", verbose=False):
     log_id_map = get_log_id(sn, env)
     if not log_id_map:
         return None
-    service_name = "dialog-system:NluReceiver"
+    service_name = "dialog-system:doNlpAnalysis"
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, _ = _parse_service_info(service_info)
     if verbose:
