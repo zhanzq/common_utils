@@ -6,6 +6,7 @@
 import os
 from PyPDF2 import PdfMerger
 from PIL import Image
+import re
 
 
 class PDF:
@@ -14,12 +15,12 @@ class PDF:
 
     def merge_pdf(self, input_dir):
         """
-        合并input_dir下的所有pdf文件，按文件名称升序排序
+        合并input_dir下的所有pdf文件，按文件名称升序排序，非数字命名的文件忽略
         :param input_dir: 待合并文件所在目录
         :return:
         """
-        pdf_lst = [f for f in os.listdir(input_dir) if f.endswith('.pdf')]
-        pdf_lst.sort()
+        pdf_lst = [f for f in os.listdir(input_dir) if re.fullmatch(pattern="\\d+.pdf", string=f)]
+        pdf_lst.sort(key=lambda it: int(it.split(".")[0]))
         pdf_lst = [os.path.join(input_dir, filename) for filename in pdf_lst]
         file_merger = PdfMerger()
         for pdf in pdf_lst:
