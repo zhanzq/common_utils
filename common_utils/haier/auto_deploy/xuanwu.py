@@ -13,14 +13,130 @@ from common_utils.const.web import USER_AGENT, COOKIE_XUANWU_DEV, COOKIE_XUANWU_
 
 
 class XuanWu:
-    def __init__(self, domain_intent_to_id_path=None):
+    def __init__(self, domain_intent_to_id_path=None, slot_info_dct_path=None):
         if not domain_intent_to_id_path:
             domain_intent_to_id_path = "/Users/zhanzq/Documents/work_haier/data/domain_intent_to_id.json"
+        if not slot_info_dct_path:
+            slot_info_dct_path = "/Users/zhanzq/Documents/work_haier/data/slot_info.json"
         self.domain_intent_to_id_path = domain_intent_to_id_path
-        self.domain_intent_to_id = self.get_domain_intent_to_id()
+        self.slot_info_dct_path = slot_info_dct_path
+        self.domain_intent_to_id = None
+        self.slot_info_dct = None
+        self.load_resource()
+
+    def load_resource(self):
+        self.get_domain_intent_to_id()
+        self.get_slot_info_dct()
+
+    def get_slot_info_dct(self):
+        if not self.slot_info_dct:
+            self.slot_info_dct = load_from_json(self.slot_info_dct_path)
+
+        return self.slot_info_dct
+
+    @staticmethod
+    def _remove_slot_info(intent_info, slots_to_remove):
+        slots = intent_info["nlpIntentSlots"]
+        if type(slots_to_remove) is str:
+            slots_to_remove = [slots_to_remove]
+
+        remove_slot_ids = []
+        new_slot_info = []
+        for slot in slots:
+            slot_code = slot.get("slotCode")
+            if slot_code in slots_to_remove:
+                remove_slot_ids.append(slot.get("id"))
+            else:
+                new_slot_info.append(slot)
+
+        intent_info["nlpIntentSlots"] = new_slot_info
+        intent_info["delNlpIntentSlotIds"] = ",".join(remove_slot_ids)
+
+        return intent_info
+
+    def remove_slot_from_xuanwu(self, domain, intent, slots_to_remove):
+        """
+        从玄武中删除意图中的一个或多个槽位
+        :param domain: 领域code
+        :param intent: 意图code
+        :param slots_to_remove: 待删除的槽位名列表或字符串，如"temp", ["temp", "device"]
+        :return:
+        """
+        # 获取intent所有信息
+        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_info = self._get_detail_intent_info(intent_id)
+
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/intentSlot/saveDetail"
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        data = self._remove_slot_info(intent_info=intent_info, slots_to_remove=slots_to_remove)
+        payload = json.dumps(data)
+
+        response = requests.request(method, url, headers=headers, data=payload)
+        obj_resp = json.loads(response.text)
+
+        return obj_resp
+
+    def add_slot_into_xuanwu(self, domain, intent, slot_info_lst):
+        """
+        玄武中新增槽位信息
+        :param domain:
+        :param intent:
+        :param slot_info_lst:
+        :return:
+        """
+        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        add_slot_lst = []
+        for slot_info in slot_info_lst:
+            slot_info.update({"intent_id": intent_id})
+            # 构造槽位信息数据
+            slot_item = self._construct_slot(slot_info=slot_info)
+            add_slot_lst.append(slot_item)
+
+        # 获取intent所有信息
+        intent_info = self._get_detail_intent_info(intent_id)
+        # 构造完整的待上传slot数据
+        post_data = construct_auto_upload_slot_post_data(intent_info, new_slot_items=add_slot_lst)
+
+        # 自动上传slot数据
+        return self._auto_upload_slot(post_data)
+
+    @staticmethod
+    def _construct_slot(slot_info):
+        data_type = slot_info.get("data_type", "String")
+        slot_code = slot_info.get("slot_code")
+        slot_name = slot_info.get("slot_name")
+        dict_code = slot_info.get("dict_code")
+        intent_id = slot_info.get("intent_id")
+        must = slot_info.get("must", "N")
+        single = slot_info.get("single", "N")
+        slot_item = {
+            'dataType': data_type,
+            'dictCode': dict_code,
+            'dnitId': intent_id,
+            'slotCode': slot_code,
+            'slotName': slot_name,
+            "must": must,
+            "single": single
+        }
+
+        return slot_item
 
     @staticmethod
     def add_intent_into_xuanwu(domain, intent, intent_name):
+        """
+        玄武中新增意图
+        :param domain: 领域code
+        :param intent: 意图code
+        :param intent_name: 意图名称
+        :return:
+        """
         url = "https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/domainIntent/add"
         headers = {
             "Accept": "application/json, text/plain, */*",
@@ -139,7 +255,10 @@ class XuanWu:
 
     def get_domain_intent_to_id(self):
         # 加载domain_intent_to_id映射表
-        return load_from_json(self.domain_intent_to_id_path)
+        if not self.domain_intent_to_id:
+            self.domain_intent_to_id = load_from_json(self.domain_intent_to_id_path)
+
+        return self.domain_intent_to_id
 
     def get_intent_info(self, domain, intent, verbose=True):
         """
@@ -617,7 +736,7 @@ from common_utils.text_io.excel import load_json_list_from_xlsx
 def main():
     xuanwu = XuanWu()
     xuanwu.get_intent_info(domain="Steamer", intent="increaseTemperature")
-    data_path = "/Users/zhanzq/Library/Mobile Documents/com~apple~CloudDocs/Documents/work_haier/data/玄武数据.xlsx"
+    data_path = "/Users/zhanzq/Documents/work_haier/data/玄武数据.xlsx"
 
     sheet_name = "slot_info"
     json_lst = load_json_list_from_xlsx(xlsx_path=data_path, sheet_names=[sheet_name])[sheet_name]

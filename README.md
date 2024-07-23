@@ -6,7 +6,8 @@
    + 新增`get_device_lst(sn, env="test", by_type=True)`功能，获取用户的设备列表信息
 2. 更新`common_utils.haier.auto_deploy.xuanwu`模块
    + 新增`add_intent_into_xuanwu(domain, intent, intent_name)`功能，插入新意图
-   + 
+   + 新增`add_slot_into_xuanwu(self, domain, intent, slot_info_lst)`功能，插入新槽位
+   + 新增`remove_slot_from_xuanwu(self, domain, intent, slots_to_remove)`功能，删除槽位
 
 
 ## version 1.4.3
