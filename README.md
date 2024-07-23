@@ -1,18 +1,22 @@
 # 常用工具包
 ## version 1.4.4
 ### updates
-1. 更新common_utils.haier.auto_test.parse_log模块
+1. 更新`common_utils.haier.auto_test.parse_log`模块
    + 新增`get_do_nlp_analysis_info_from_log`功能，解析得到nlp的最终输出结果，给到云端
    + 新增`get_device_lst(sn, env="test", by_type=True)`功能，获取用户的设备列表信息
+2. 更新`common_utils.haier.auto_deploy.xuanwu`模块
+   + 新增`add_intent_into_xuanwu(domain, intent, intent_name)`功能，插入新意图
+   + 
+
 
 ## version 1.4.3
 ### updates
-1. 在common_utils.const.web中新增玄武平台的验收环境cookie
-2. 更新common_utils.haier.auto_test.parse_log模块
+1. 在`common_utils.const.web`模块中新增玄武平台的验收环境cookie
+2. 更新`common_utils.haier.auto_test.parse_log`模块
    + 解析日志时，默认过滤不必要的BlockTemplate等semantics
    + rm_block_semantics时，默认不删除BlockNLU语义信息 
    + 新增rm_block_template, rm_block_nlu, rm_block_corpus等功能，单独处理各种不必要的阻塞意图
-3. 新增common_utils.haier.auto_deploy.xuanwu模块，支持
+3. 新增`common_utils.haier.auto_deploy.xuanwu`模块，支持
    + 自动增加模板
    + 开发、验收及仿真环境自动部署
    + 验收环境数据更新下载
@@ -21,7 +25,7 @@
 
 ## version 1.4.2
 ### updates
-1. 新增common_utils.haier.xuanwu.dict_op模块：
+1. 新增`common_utils.haier.xuanwu.dict_op`模块：
    + 支持玄武字典的查询`get_word_dict_in_xuanwu(dict_code)`
    + 支持向玄武字典中添加词语`add_word_to_xuanwu_dict(dict_code, word, synonym="")`
    + 支持搜索玄武字典中的词语`search_word_in_xuanwu_dict(dict_code, word)`

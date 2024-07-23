@@ -19,6 +19,32 @@ class XuanWu:
         self.domain_intent_to_id_path = domain_intent_to_id_path
         self.domain_intent_to_id = self.get_domain_intent_to_id()
 
+    @staticmethod
+    def add_intent_into_xuanwu(domain, intent, intent_name):
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/domainIntent/add"
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        data = {
+            "domainCode": domain,
+            "intentCode": intent,
+            "intentName": intent_name,
+            "commandCheckFlag": "N",
+            "statusQueryFlag": "N",
+            "functionQueryFlag": "N",
+            "functionStatusQueryFlag": "N",
+            "extend": "{}"
+        }
+
+        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data))
+        obj_resp = json.loads(response.text)
+
+        return obj_resp
+
     def auto_deploy(self, domain, env):
         """
         自动部署，使更新生效
@@ -133,24 +159,48 @@ class XuanWu:
 
         return slot_info, tpl_info
 
-    def insert_template(self, domain, intent, template):
+    @staticmethod
+    def template_exist(tpl_info, template):
+        for tpl_item in tpl_info:
+            if tpl_item["tpl"] == template:
+                return True
+
+        return False
+
+    def insert_template(self, domain, intent, template, slot_value_dct=None, overwrite=False):
         """
         插入模板
         :param domain: 意图所属的领域代码
         :param intent: 意图代码
         :param template: 待插入的模式列表，以\n分隔
+        :param slot_value_dct: 模板对应的槽位默认值, 默认所有槽位无值
+        :param overwrite: 是否覆盖已有模板，默认为False，即不覆盖
         :return:
         """
+
         intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+
         if not intent_id:
             return None, None
         if not template:
             return
 
+        intent_info = self._get_detail_intent_info(intent_id)
+        slot_info_dct = parse_slot_info(intent_info, verbose=False)
+        # construct slot items
+        slot_items = []
+        if slot_value_dct:
+            slot_items = self.construct_nlp_template_slot_items(slot_info_dct, slot_value_dct)
+        tpl_info = parse_template_lst(intent_info)
+
+        if not overwrite and self.template_exist(tpl_info, template):
+            print(f"template '{template}' exists in XuanWu")
+            return
+
         for tpl in template.split("\n"):
             # 获取intent所有信息
             intent_info = self._get_detail_intent_info(intent_id)
-            tpl_item = self._construct_tpl(intent_id=intent_id, tpl_content=tpl)
+            tpl_item = self._construct_tpl(intent_id=intent_id, tpl_content=tpl, slot_items=slot_items)
             # old_tpl_num = len(intent_info['nlpTemlpateSlotVOS'])
 
             # 构造完整的待上传tpl数据
@@ -244,12 +294,43 @@ class XuanWu:
         return obj_resp
 
     @staticmethod
-    def _construct_tpl(intent_id, tpl_content):
+    def _construct_nlp_template_slot_item(slot_info, slot_value):
+        slot_item = {
+            "isselect": False,
+            "id": "",
+            "itstId": slot_info.get("id"),
+            "params": {
+                "slotName": slot_info.get("slot_name"),
+                "dictCode": slot_info.get("dict_code"),
+                "slotCode": slot_info.get("slot_code")
+            },
+            "dictCode": slot_info.get("dict_code"),
+            "slotCode": slot_info.get("slot_code"),
+            "slotName": slot_info.get("slot_name"),
+            "slotValue": slot_value
+        }
+
+        return slot_item
+
+    def construct_nlp_template_slot_items(self, slot_info_dct, value_dct):
+        slot_items = []
+        for slot_code, slot_value in value_dct.items():
+            if slot_code not in slot_info_dct:
+                continue
+            else:
+                slot_items.append(self._construct_nlp_template_slot_item(slot_info_dct[slot_code], slot_value))
+
+        return slot_items
+
+    @staticmethod
+    def _construct_tpl(intent_id, tpl_content, slot_items=None):
+        if not slot_items:
+            slot_items = []
         tpl_item = {
             'dnitId': intent_id,
             'entitySource': '',
             'id': '',
-            'nlpTemplateSlots': [],
+            'nlpTemplateSlots': slot_items,
             'status': '',
             'tplContent': tpl_content,
             'tplType': 'COMMON'
@@ -483,9 +564,10 @@ def construct_auto_upload_template_post_data(old_intent_info, new_tpl_item):
     return old_intent_info
 
 
-def construct_auto_upload_slot_post_data(old_intent_info, new_slot_item):
+def construct_auto_upload_slot_post_data(old_intent_info, new_slot_items):
     # 构造待上传的完整数据
-    old_intent_info["nlpIntentSlots"].insert(0, new_slot_item)
+    for item in new_slot_items:
+        old_intent_info["nlpIntentSlots"].insert(0, item)
 
     return old_intent_info
 
@@ -498,8 +580,9 @@ def parse_slot_info(intent_info, verbose=True):
         slot_code = item["slotCode"]
         slot = {
             "id": item["id"],
-            "slotName": item["slotName"],
-            "dictCode": item["dictCode"],
+            "slot_code": item["slotCode"],
+            "slot_name": item["slotName"],
+            "dict_code": item["dictCode"],
             "must": item["must"],
             "default_value": item["defaultValue"],
             "dict_name": item["params"].get("dictName"),
