@@ -8,7 +8,7 @@
    + 新增`add_intent_into_xuanwu(domain, intent, intent_name)`功能，插入新意图
    + 新增`add_slot_into_xuanwu(self, domain, intent, slot_info_lst)`功能，插入新槽位
    + 新增`remove_slot_from_xuanwu(self, domain, intent, slots_to_remove)`功能，删除槽位
-
+   + 新增`edit_template(self, domain, intent, old_template, new_template)`功能，编辑已有模板
 
 ## version 1.4.3
 ### updates

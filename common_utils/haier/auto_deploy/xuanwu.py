@@ -286,12 +286,47 @@ class XuanWu:
 
         return False
 
+    def edit_template(self, domain, intent, old_template, new_template):
+        """
+        插入模板
+        :param domain: 意图所属的领域代码
+        :param intent: 意图代码
+        :param old_template: 修改前的模板
+        :param new_template: 修改后的模板
+        :return:
+        """
+
+        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+
+        if not intent_id:
+            return "意图未找到"
+        if not old_template or not new_template:
+            return "新/旧模板为空值"
+
+        found = False
+        intent_info = self._get_detail_intent_info(intent_id)
+        template_lst = intent_info["nlpTemlpateSlotVOS"]
+        for tpl_item in template_lst:
+            tpl_content = tpl_item.get("tplContent")
+            if tpl_content == old_template:
+                tpl_item["tplContent"] = new_template
+                found = True
+                break
+
+        if not found:
+            return "未找到旧的模板"
+
+        # 自动上传tpl数据
+        res = self._auto_upload_tpl(intent_info)
+
+        return res
+
     def insert_template(self, domain, intent, template, slot_value_dct=None, overwrite=False):
         """
         插入模板
         :param domain: 意图所属的领域代码
         :param intent: 意图代码
-        :param template: 待插入的模式列表，以\n分隔
+        :param template: 待插入的模式列表，以'\n'分隔
         :param slot_value_dct: 模板对应的槽位默认值, 默认所有槽位无值
         :param overwrite: 是否覆盖已有模板，默认为False，即不覆盖
         :return:
