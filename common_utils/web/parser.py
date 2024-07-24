@@ -52,11 +52,14 @@ class WEB:
                         res.append(child)
                     else:
                         self._get_item_by_text(child, text, res)
-                except:
+                except Exception as e:
+                    print(e)
                     res.append(child)
         return
 
     def _get_item_by_text_in_div(self, text):
+        if not self.html:
+            self.download_web()
         bs = BS(self.html, markup="HTML")
         divs = bs.find_all("div")
         res = []
@@ -66,6 +69,8 @@ class WEB:
         return res
 
     def _get_item_by_text_in_li(self, text):
+        if not self.html:
+            self.download_web()
         bs = BS(self.html, markup="HTML")
 
         lis = bs.find_all("li")

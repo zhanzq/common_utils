@@ -317,9 +317,9 @@ class XuanWu:
             return "未找到旧的模板"
 
         # 自动上传tpl数据
-        res = self._auto_upload_tpl(intent_info)
+        self._auto_upload_tpl(intent_info)
 
-        return res
+        return "success"
 
     def insert_template(self, domain, intent, template, slot_value_dct=None, overwrite=False):
         """
@@ -335,9 +335,9 @@ class XuanWu:
         intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
 
         if not intent_id:
-            return None, None
+            return "意图未找到"
         if not template:
-            return
+            return "模板为空值"
 
         intent_info = self._get_detail_intent_info(intent_id)
         slot_info_dct = parse_slot_info(intent_info, verbose=False)
@@ -349,7 +349,7 @@ class XuanWu:
 
         if not overwrite and self.template_exist(tpl_info, template):
             print(f"template '{template}' exists in XuanWu")
-            return
+            return "模板已存在"
 
         for tpl in template.split("\n"):
             # 获取intent所有信息
@@ -364,7 +364,7 @@ class XuanWu:
             # 自动上传tpl数据
             self._auto_upload_tpl(post_data)
 
-        return
+        return "success"
 
     def update_domain_info(self, domain_to_update):
         """
