@@ -9,6 +9,7 @@ import requests
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
 from common_utils.utils import format_string
+import chardet
 
 
 class WEB:
@@ -35,6 +36,8 @@ class WEB:
             # 检查请求是否成功
             if response.status_code == 200:
                 # 获取网页源码
+                encoding = chardet.detect(response.content)['encoding']
+                response.encoding = encoding
                 html_content = response.text
                 self.html = html_content
             else:
@@ -60,7 +63,7 @@ class WEB:
     def _get_item_by_text_in_div(self, text):
         if not self.html:
             self.download_web()
-        bs = BS(self.html, markup="HTML")
+        bs = BS(self.html)
         divs = bs.find_all("div")
         res = []
         for div in divs:
@@ -71,7 +74,7 @@ class WEB:
     def _get_item_by_text_in_li(self, text):
         if not self.html:
             self.download_web()
-        bs = BS(self.html, markup="HTML")
+        bs = BS(self.html)
 
         lis = bs.find_all("li")
 
@@ -108,7 +111,7 @@ class WEB:
     def get_item_by_href(self, href):
         if not self.html:
             self.download_web()
-        bs = BS(self.html, markup="HTML")
+        bs = BS(self.html)
         lst = bs.find_all("a")
         for it in lst:
             if it["href"] == href:
@@ -122,7 +125,7 @@ class WEB:
         if not self.html:
             self.download_web()
 
-        bs = BS(self.html, markup="HTML")
+        bs = BS(self.html)
 
         lst = bs.find_all("a", **attr)
         links = []
