@@ -23,6 +23,8 @@
    + 验收环境数据更新下载
    + 领域同步到仿真
    + 数据导入到验收环境
+   + 基础数据的导出: `export_base_data_from_dev`
+   + 基础数据的导入: `import_base_data_into_sim(data_path)`
 
 ## version 1.4.2
 ### updates

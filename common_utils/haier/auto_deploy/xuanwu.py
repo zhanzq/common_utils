@@ -9,7 +9,8 @@ import time
 import requests
 from urllib.parse import quote
 from common_utils.text_io.txt import load_from_json, save_to_json
-from common_utils.const.web import USER_AGENT, COOKIE_XUANWU_DEV, COOKIE_XUANWU_TEST
+from common_utils.const.web import USER_AGENT, COOKIE_XUANWU_DEV, COOKIE_XUANWU_TEST, COOKIE_XUANWU_SIM
+from bs4 import BeautifulSoup as BS
 
 
 class XuanWu:
@@ -224,6 +225,109 @@ class XuanWu:
             return obj_resp, None
 
     @staticmethod
+    def _get_release_html():
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/add"
+        headers = {
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "GET"
+        payload = ""
+
+        response = requests.request(method, url, headers=headers, data=payload)
+        html = response.text
+
+        return html
+
+    def _get_base_data_release_info(self,):
+        html = self._get_release_html()
+        bs = BS(html)
+        items = bs.find_all("input")
+        assert len(items) == 3, "基础数据发布需要 id, version, newVersion 三项内容"
+
+        release_info = [item.get("value") for item in items]
+
+        return release_info
+
+    def _release_base_data(self, ):
+        """
+        发布基础数据，之后方可进行下载
+        :return: version, 如果数据为空，返回None
+        """
+        release_info = self._get_base_data_release_info()
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/add"
+        headers = {
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        release_id, old_version, new_version = release_info
+
+        payload = f"id={release_id}&version={old_version}&newVersion={new_version}"
+
+        response = requests.request(method, url, headers=headers, data=payload)
+
+        json_obj = json.loads(response.text)
+        msg = json_obj.get("msg")
+        if msg == "success":
+            return old_version
+        else:
+            print(json_obj)
+            return None
+
+    def _export_base_data(self, ):
+        version = self._release_base_data()
+        if version is None:
+            return None
+        # export data
+        file_name = f"baseData_sim_{version}.sql"
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/export"
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT,
+            "X-Requested-With": "XMLHttpRequest",
+        }
+        method = "POST"
+        payload = f"version={version}"
+
+        response = requests.request(method, url, headers=headers, data=payload)
+        json_obj = json.loads(response.content)
+        print(json_obj)
+
+        return version
+
+    def export_base_data_from_dev(self, ):
+        """
+        从玄武开发环境中导出基础数据到本地
+        :return:
+        """
+        # export data
+        version = self._export_base_data()
+        if version is None:
+            return
+
+        # download data
+        file_name = f"baseData_sim_{version}.sql"
+        base_url = "https://aidev.haiersmarthomes.com/xuanwu-admin/common/download?"
+        url = base_url + f"fileName={file_name}&delete=true"
+        headers = {
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "GET"
+        payload = ""
+
+        response = requests.request(method, url, headers=headers, data=payload)
+        output_path = f"/Users/zhanzq/Downloads/{file_name}"
+        with open(output_path, "wb") as writer:
+            print(f"content size: {len(response.content)}")
+            writer.write(response.content)
+            print(f"store file {file_name} into {output_path}")
+
+        return
+
+    @staticmethod
     def import_additional_data_into_test(data_path):
         """
         导入新增数据到验收环境，数据包括模板和字典
@@ -245,8 +349,46 @@ class XuanWu:
         }
         try:
             response = requests.post(url, headers=headers, files=files)
-            print("import data into test finished!")
-            print(response.text)
+            json_obj = json.loads(response.content)
+            msg = json_obj.get("msg")
+            if msg == "success":
+                print("import data into test finished!")
+            else:
+                print(json_obj)
+        except Exception as e:
+            print(e)
+
+        reader.close()
+        return
+
+    @staticmethod
+    def import_base_data_into_sim(data_path):
+        """
+        导入基础数据到仿真环境，数据包括字典
+        :param data_path: 基础数据文件
+        :return:
+        """
+        url = "https://aisim.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/import"
+
+        headers = {
+            "Cookie": COOKIE_XUANWU_SIM,
+            "User-Agent": USER_AGENT,
+            "X-Requested-With": "XMLHttpRequest"
+        }
+
+        file_name = data_path.split("/")[-1]
+        reader = open(data_path, "rb")
+        files = {
+            'file': (file_name, reader, 'application/octet-stream')
+        }
+        try:
+            response = requests.post(url, headers=headers, files=files)
+            json_obj = json.loads(response.text)
+            msg = json_obj.get("msg")
+            if msg == "success":
+                print("import data into sim finished!")
+            else:
+                print(json_obj)
         except Exception as e:
             print(e)
 
