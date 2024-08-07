@@ -300,12 +300,12 @@ class XuanWu:
     def export_base_data_from_dev(self, ):
         """
         从玄武开发环境中导出基础数据到本地
-        :return:
+        :return: 返回本地文件路径，如果导出失败，返回None
         """
         # export data
         version = self._export_base_data()
         if version is None:
-            return
+            return None
 
         # download data
         file_name = f"baseData_sim_{version}.sql"
@@ -325,7 +325,7 @@ class XuanWu:
             writer.write(response.content)
             print(f"store file {file_name} into {output_path}")
 
-        return
+        return output_path
 
     @staticmethod
     def import_additional_data_into_test(data_path):
