@@ -174,10 +174,9 @@ class XuanWu:
             comment = f"同步{domain}"
         deploy_res = self._auto_deploy_template(env, comment=comment)
         curr_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        print(f"部署到{env}, comment: {comment}, time: {curr_time}")
-        print(deploy_res)
+        deploy_info = [f"部署到{env}, comment: {comment}, time: {curr_time}", str(deploy_res)]
 
-        return deploy_res
+        return deploy_info
 
     def domain_sync_to_sim(self, domains_to_sync):
         """
@@ -192,10 +191,9 @@ class XuanWu:
                 domains_to_sync = [domains_to_sync]
         sync_res = self._domain_sync_to_sim(domains=domains_to_sync)
         curr_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        print(f"同步到仿真（模板数据: 验收 --> 仿真）, time: {curr_time}")
-        print(sync_res)
+        sync_info = [f"同步到仿真（模板数据: 验收 --> 仿真）, time: {curr_time}", str(sync_res)]
 
-        return
+        return sync_info
 
     def export_additional_data_from_dev(self,):
         """
@@ -220,9 +218,9 @@ class XuanWu:
         if data_file:
             output_path = self._download_data_file_from_xuanwu(data_file)
             print(f"store file {data_file} into {output_path}")
-            return obj_resp, output_path
+            return output_path
         else:
-            return obj_resp, None
+            return None
 
     @staticmethod
     def _get_release_html():
@@ -515,17 +513,17 @@ class XuanWu:
         :return:
         """
         if not domain_to_update:
-            return
+            return None
 
         domain_intent_to_id = load_from_json(self.domain_intent_to_id_path)
         intent_to_id = self._get_intent_to_id_by_domain(domain=domain_to_update)
         if not intent_to_id:
-            return
+            return None
         domain_intent_to_id[domain_to_update] = intent_to_id
         save_to_json(json_obj=domain_intent_to_id, json_path=self.domain_intent_to_id_path)
         self.domain_intent_to_id = domain_intent_to_id
 
-        return
+        return domain_intent_to_id
 
     def _auto_deploy_template(self, env="dev", comment="fb"):
         comment = quote(comment)
@@ -545,10 +543,23 @@ class XuanWu:
             "User-Agent": USER_AGENT,
             "X-Requested-With": "XMLHttpRequest"
         }
-        method = "POST"
-        payload = f"version={version}&remark={comment}"
-        response = requests.request(method, url, headers=headers, data=payload)
-        obj_resp = json.loads(response.text)
+
+        while True:
+            method = "POST"
+            payload = f"version={version}&remark={comment}"
+
+            response = requests.request(method, url, headers=headers, data=payload)
+
+            obj_resp = json.loads(response.text)
+            if obj_resp.get("code") == 500:
+                # 版本号已经存在, 更新版本号
+                version_items = version.split(".")
+                version_items = [int(it) for it in version_items]
+                version_items[-1] += 1
+                version_items = [str(it) for it in version_items]
+                version = ".".join(version_items)
+            else:
+                break
 
         return obj_resp
 
