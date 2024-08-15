@@ -2,6 +2,7 @@
 # created @2024/3/18
 # created by zhanzq
 #
+import re
 
 import requests
 import json
@@ -114,7 +115,6 @@ def edit_xuanwu_dict(dict_code, word, synonym, overwrite=False):
     url = "https://aidev.haiersmarthomes.com/xuanwu-admin/nlp/dictWord/edit"
 
     headers = {
-        # "Cookie": "JSESSIONID=02a4405f-c8fd-47ed-94ec-dbcb1ad0af04; rememberMe=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",
         "Cookie": COOKIE_XUANWU_DEV,
         "User-Agent": USER_AGENT,
         "Content-Type": "application/x-www-form-urlencoded",
@@ -128,14 +128,16 @@ def edit_xuanwu_dict(dict_code, word, synonym, overwrite=False):
 
     new_synonym = word_dict[word]["synonym"]
     old_lst = [] if not new_synonym else new_synonym.split(",")
-    lst = []
     if type(synonym) is str:
-        lst = synonym.split(",")
+        # 支持分隔符：/,，;；|和\
+        lst = re.split(pattern="/|,|，|;|；|\\||\\\\", string=synonym)
+        lst = [it.strip() for it in lst]
     else:
         lst = synonym
 
     if not overwrite:
         lst.extend(old_lst)
+        lst = list(set(lst))
     print(lst)
 
     method = "POST"
