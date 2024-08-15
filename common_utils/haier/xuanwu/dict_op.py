@@ -102,12 +102,13 @@ def add_word_to_xuanwu_dict(dict_code, word, synonym=""):
     return obj_resp
 
 
-def edit_xuanwu_dict(dict_code, word, synonym):
+def edit_xuanwu_dict(dict_code, word, synonym, overwrite=False):
     """
     添加或修改玄武字典中关键词的泛化说法
     :param dict_code: 玄武字典代码
     :param word: 关键词
     :param synonym: 关键词对应的泛化说法
+    :param overwrite: 是否重写，默认不重写，即在原有词的基础上追加泛化词
     :return:
     """
     url = "https://aidev.haiersmarthomes.com/xuanwu-admin/nlp/dictWord/edit"
@@ -126,12 +127,15 @@ def edit_xuanwu_dict(dict_code, word, synonym):
         return add_word_to_xuanwu_dict(dict_code=dict_code, word=word, synonym=synonym)
 
     new_synonym = word_dict[word]["synonym"]
-    lst = [] if not new_synonym else new_synonym.split(",")
+    old_lst = [] if not new_synonym else new_synonym.split(",")
+    lst = []
     if type(synonym) is str:
         lst = synonym.split(",")
     else:
         lst = synonym
 
+    if not overwrite:
+        lst.extend(old_lst)
     print(lst)
 
     method = "POST"
