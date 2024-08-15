@@ -92,6 +92,15 @@ def add_word_to_xuanwu_dict(dict_code, word, synonym=""):
         print(f"'{word}' already exists in dict '{dict_code}'")
         return
 
+    # 处理synonym的格式
+    if type(synonym) is str:
+        # 支持分隔符：/,，;；|和\
+        lst = re.split(pattern="/|,|，|;|；|\\||\\\\", string=synonym)
+        lst = [it.strip() for it in lst]
+    else:
+        lst = synonym
+    synonym = ",".join(lst)
+
     method = "POST"
     payload = f"dictCode={dict_code}&word={quote(word)}&synonym={quote(synonym)}"
 
