@@ -64,7 +64,18 @@ class XuanWu:
         :return:
         """
         # 获取intent所有信息
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        if domain not in self.domain_intent_to_id:
+            print(f"domain '{domain}' not found in domain_intent_to_id")
+            return None
+        elif intent not in self.domain_intent_to_id[domain]:
+            print(f"intent '{intent}' not found in domain_intent_to_id")
+            return None
+        else:
+            intent_id = self.domain_intent_to_id[domain][intent].get("id")
+            if intent_id is None:
+                print(f"'{domain}-{intent}' not found in domain_intent_to_id")
+                return None
+
         intent_info = self._get_detail_intent_info(intent_id)
 
         url = "https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/intentSlot/saveDetail"
