@@ -95,24 +95,57 @@ class XuanWu:
 
         return obj_resp
 
-    def add_slot_into_xuanwu(self, domain, intent, slot_info_lst):
+    def add_slot_into_xuanwu(self, domain, intent, slot_info_lst, overwrite=False):
         """
         玄武中新增槽位信息
-        :param domain:
-        :param intent:
-        :param slot_info_lst:
+        :param domain: 槽位信息对应的领域
+        :param intent: 槽位信息对应的意图
+        :param slot_info_lst: 待添加的槽位信息列表
+        :param overwrite: 检查添加的槽位名或对应的字典名是否已经存在，若存在，则默认不添加该槽位信息
         :return:
+        slot_info_lst 示例：
+        ```
+        [
+            {
+                "slot_name": "设置",
+                "dict_code": "sys@set",
+                "slot_code": "set",
+                "intent_id": "1824623477953396736"
+            },
+            {
+                "slot_name": "房间",
+                "dict_code": "room",
+                "slot_code": "room",
+                "intent_id": "1824623477953396736"
+            }
+        ]
+        ```
         """
+        if domain not in self.domain_intent_to_id or intent not in self.domain_intent_to_id[domain]:
+            # 更新领域数据
+            self.update_domain_info(domain_to_update=domain)
+
         intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        # 获取intent所有信息
+        intent_info = self._get_detail_intent_info(intent_id)
+
+        # 检查增加的槽位名是否已存在
+        slots = intent_info["nlpIntentSlots"]
+        curr_slot_codes = set([slot.get("slotCode") for slot in slots])
+        curr_dict_codes = set([slot.get("dictCode") for slot in slots])
+
         add_slot_lst = []
         for slot_info in slot_info_lst:
             slot_info.update({"intent_id": intent_id})
+            slot_code, dict_code = slot_info.get("slot_code"), slot_info.get("dict_code")
+            if overwrite and (slot_code in curr_slot_codes or dict_code in curr_dict_codes):
+                print(f"{slot_code}-->{dict_code} already exists")
+                continue
+
             # 构造槽位信息数据
             slot_item = self._construct_slot(slot_info=slot_info)
             add_slot_lst.append(slot_item)
 
-        # 获取intent所有信息
-        intent_info = self._get_detail_intent_info(intent_id)
         # 构造完整的待上传slot数据
         post_data = construct_auto_upload_slot_post_data(intent_info, new_slot_items=add_slot_lst)
 
