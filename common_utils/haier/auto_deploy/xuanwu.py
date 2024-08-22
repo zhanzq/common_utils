@@ -600,6 +600,9 @@ class XuanWu:
                 version_items = version.split(".")
                 version_items = [int(it) for it in version_items]
                 version_items[-1] += 1
+                if version_items[-1] == 100:
+                    version_items[-2] += 1
+                    version_items[-1] = 0
                 version_items = [str(it) for it in version_items]
                 version = ".".join(version_items)
             else:
