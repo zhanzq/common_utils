@@ -505,6 +505,70 @@ class XuanWu:
 
         return "success"
 
+    def remove_all_template(self, domain, intent):
+        """
+        插入模板
+        :param domain: 意图所属的领域代码
+        :param intent: 意图代码
+        :return:
+        """
+
+        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+
+        if not intent_id:
+            return "意图未找到"
+
+        intent_info = self._get_detail_intent_info(intent_id)
+
+        # 更新意图信息
+        intent_info["delNlpTemlpateSlotIds"] = ",".join([it.get("id") for it in intent_info["nlpTemlpateSlotVOS"]])
+        intent_info["nlpTemlpateSlotVOS"] = []
+
+        # 自动上传tpl数据
+        self._auto_upload_tpl(intent_info)
+
+        return "success"
+
+    def remove_template(self, domain, intent, template):
+        """
+        插入模板
+        :param domain: 意图所属的领域代码
+        :param intent: 意图代码
+        :param template: 待删除的模板
+        :return:
+        """
+
+        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+
+        if not intent_id:
+            return "意图未找到"
+        if not template:
+            return "待删除的模板为空值"
+
+        found = False
+        intent_info = self._get_detail_intent_info(intent_id)
+        template_lst = intent_info["nlpTemlpateSlotVOS"]
+        new_lst = []
+        for tpl_item in template_lst:
+            tpl_content = tpl_item.get("tplContent")
+            if tpl_content == template:
+                found = True
+                intent_info["delNlpTemlpateSlotIds"] = tpl_item.get("id")
+            else:
+                new_lst.append(tpl_item)
+
+        if not found:
+            return "未找到待删除的模板"
+
+        # 更新意图信息
+        intent_info["nlpTemlpateSlotVOS"] = new_lst
+
+        # 自动上传tpl数据
+        res = self._auto_upload_tpl(intent_info)
+        print(res)
+
+        return "success"
+
     def insert_template(self, domain, intent, template, slot_value_dct=None, overwrite=False):
         """
         插入模板
@@ -970,6 +1034,15 @@ from common_utils.text_io.excel import load_json_list_from_xlsx
 
 def main():
     xuanwu = XuanWu()
+    domain = "Dev.oven"
+    intent = "increaseTemperature"
+    tpl = "[请帮需要让忙我把将务必尽快速你踢给替立即]*{<deviceName>}.{0,3}{<position>}?(抓紧|赶紧|赶?快)[一点些]*儿?(烘焙|烧?烤)[烤完毕熟火好出来制]*儿?[的啊吧啦呢呀哈行好吗哦呗了]*"
+
+    res = xuanwu.remove_template(domain=domain, intent=intent, template=tpl)
+    print(res)
+
+    return
+
     xuanwu.get_intent_info(domain="Steamer", intent="increaseTemperature")
     data_path = "/Users/zhanzq/Documents/work_haier/data/玄武数据.xlsx"
 
