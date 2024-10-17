@@ -161,6 +161,8 @@ def parse_dm_response(json_resp):
     dm_info = {
         "query": json_resp.get("userQuery"),  # not None
         "sn": json_resp.get("sn"),  # not None
+        "errorCode": json_resp.get("errorCode"),
+        "errorInfo": json_resp.get("errorInfo"),
         "category": json_resp.get("category", None),
         "domain": None,
         "intent": None,

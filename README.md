@@ -1,4 +1,14 @@
 # 常用工具包
+## version 1.4.5
+### updates
+1. 更新`common_utils.utils`模块
+   + 新增`color_string(s, color)`功能，支持打印彩色文本，red, green, yellow, blue等
+2. 新增`common_utils.stock.parser`模块
+   + 新增`get_stock_info(stock_code)`，用于获取股票当前交易信息，默认为上证代码
+   + 新增`parse_stock_info(stock_info)`，用于解析获取的股票信息，得到json对象，包含名称(name), 开盘价(open), 收盘价(close), 
+当前价(curr)，买方信息(buy)，卖方信息(sell)，日期(date)，时间(time)等
+   + 新增`print_stock_info(stock_info)`，用于打印股票的相关信息，方便查看趋势变化
+
 ## version 1.4.4
 ### updates
 1. 更新`common_utils.haier.auto_test.parse_log`模块
