@@ -27,8 +27,8 @@ def gen_add_or_sub_questions(top=10, min_val=1):
     add_lst = []
     sub_lst = []
     mix_lst = []
-    for a in range(min_val, top+1):
-        for b in range(min_val, top+1):
+    for a in range(min_val, top + 1):
+        for b in range(min_val, top + 1):
             if a + b > top:
                 break
             c = a + b
@@ -166,6 +166,34 @@ def format_string(s, length=80):
     res = "{}{}{}".format("*" * left, res, "*" * right)
 
     return res
+
+
+def color_string(s, color: str = None):
+    """
+    convert string s to colored text
+    :param s:
+    :param color: default=None, i.e. black, candidates: [red, green, yellow, blue, magenta, cyan, white]
+    :return:
+    """
+
+    if color is None:
+        return s
+    elif color.lower() == "red":
+        return f"\033[31m{s}\033[0m"
+    elif color.lower() == "green":
+        return f"\033[32m{s}\033[0m"
+    elif color.lower() == "yellow":
+        return f"\033[33m{s}\033[0m"
+    elif color.lower() == "blue":
+        return f"\033[34m{s}\033[0m"
+    elif color.lower() == "magenta":
+        return f"\033[35m{s}\033[0m"
+    elif color.lower() == "cyan":
+        return f"\033[36m{s}\033[0m"
+    elif color.lower() == "white":
+        return f"\033[37m{s}\033[0m"
+    else:
+        return s
 
 
 # 对比两个目录下所有的同名文件的差异
