@@ -33,6 +33,7 @@ def get_device_lst(sn, env="test", by_type=True):
     """
     log_id_map = get_log_id(sn=sn, env=env)
     service_name = "DataCenterDubboServiceImpl:dateResult"
+    sn = log_id_map.get(service_name)[0]
     resp_obj = get_service_info(sn=sn, log_id_map=log_id_map, service_name=service_name, env=env)
     resp = json.loads(resp_obj["data"]["response"])
     rooms = resp["roomResponse"]
@@ -228,11 +229,12 @@ def get_sign(url, timestamp):
     return sign
 
 
-def get_log_id(sn, env="test"):
+def get_log_id(sn, env="test", is_last_req=True):
     """
     获取日志id信息
     :param sn: 请求的sn号
     :param env: 请求的执行环境, default="test"
+    :param is_last_req: 是否为半流式NLP的最终请求, default=True
     :return: dict()
     """
     # date: 服务日志写入时间, 格式为"%Y%m%d",如"2023-03-08"
@@ -263,6 +265,16 @@ def get_log_id(sn, env="test"):
             response = requests.request("GET", url, headers=headers, data=payload)
             log_id_ret = json.loads(response.text)
             log_id_map = _parse_log_id(log_id_ret)
+            if log_id_map and is_last_req:
+                keys = log_id_map.keys()
+                for key in keys:
+                    log_id_map[key] = (sn, log_id_map[key])
+                service_info = get_service_info(sn, log_id_map, "dialog-system:doNlpAnalysis", env)
+                middle_sn = get_middle_sn(service_info=service_info)
+                if middle_sn:
+                    mid_log_id_map = get_log_id(sn=middle_sn, env=env, is_last_req=False)
+                    for key, val in mid_log_id_map.items():
+                        log_id_map[key] = (middle_sn, val)
             return log_id_map
         except TypeError:
             time.sleep(1)
@@ -312,6 +324,7 @@ def get_query_by_sn(sn, env="test", verbose=False):
     if not log_id_map:
         return None
     service_name = "dialog-system:doNlpAnalysis"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, _ = _parse_service_info(service_info)
     if verbose:
@@ -337,6 +350,7 @@ def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
     if not log_id_map:
         return None
     service_name = "dialog-system:NluReceiver"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"nlu receiver info: env={env}, query={query}"))
@@ -373,7 +387,7 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
         date_start += 1
     date = f"{sn[date_start:date_start+8]}"
 
-    log_id = log_id_map.get(service_name)
+    log_id = log_id_map.get(service_name)[1]
     if env == "test":
         url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
     elif env == "sim":
@@ -396,6 +410,13 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
 
     service_info = json.loads(response.text)
     return service_info
+
+
+def get_middle_sn(service_info):
+    resp = service_info.get("data").get("response")
+    resp = json.loads(resp)
+    middle_sn = resp.get("data").get("middleSn")
+    return middle_sn
 
 
 def get_semantics(resp_obj,
@@ -672,6 +693,7 @@ def get_tpl_match_info_from_log(sn, env="test", verbose=False):
         return None
 
     service_name = "NluTemplate:nlu"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
 
@@ -724,6 +746,7 @@ def block_check(sn, domain_lst, env="test", verbose=False):
         return None
 
     service_name = "NluTemplate:nlu"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
 
@@ -788,6 +811,7 @@ def get_log_trace_info_from_log(sn, env="test", verbose=False):
         return None
 
     service_name = "dialog-system:LogTrace"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"log trace info: env={env}, query={query}"))
@@ -850,6 +874,7 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
     """
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:doNlu"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"do_nlu info: env={env}, query={query}"))
@@ -881,6 +906,7 @@ def get_do_nlp_analysis_info_from_log(sn, env="test", verbose=False):
     """
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:doNlpAnalysis"
+    sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"do_nlp_analysis info: env={env}, query={query}"))
@@ -900,9 +926,12 @@ def get_do_nlp_analysis_info_from_log(sn, env="test", verbose=False):
 
 
 def main():
-    env = "service"
-    sn = "t20240206145925940281423872"
+    env = "sim"
+    sn = "t20240920142508154797807616"
     domain_lst = ["Dev.oven", ""]
+
+    get_device_lst(sn=sn, env=env, by_type=True)
+
     block_check(sn, domain_lst, env, verbose=True)
 
     get_nlu_receiver_info_from_log(sn, env, verbose=True)
