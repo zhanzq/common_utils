@@ -21,6 +21,8 @@ def save_to_txt(data_lst: list, output_path: str, encoding: str = "utf8"):
     :param encoding: data encoding, default "utf8"
     :return:
     """
+    output_dir = os.path.dirname(output_path)
+    os.makedirs(output_dir, exist_ok=True)
     with open(output_path, mode="a", encoding=encoding) as writer:
         if not data_lst[0].endswith("\n"):
             data_lst = [it + "\n" for it in data_lst]
@@ -38,6 +40,8 @@ def save_to_jsonl(json_lst: list, jsonl_path: str, encoding: str = 'utf8'):
     :param encoding: data encoding, default "utf8"
     :return:
     """
+    output_dir = os.path.dirname(jsonl_path)
+    os.makedirs(output_dir, exist_ok=True)
     with open(jsonl_path, "w", encoding=encoding) as writer:
         for json_obj in json_lst:
             json_obj = {key: val for key, val in json_obj.items() if key or val}
@@ -76,6 +80,8 @@ def save_to_json(json_obj: dict, json_path: str, encoding: str = 'utf8'):
     :param encoding: data encoding, default 'utf8'
     :return:
     """
+    output_dir = os.path.dirname(json_path)
+    os.makedirs(output_dir, exist_ok=True)
     with open(json_path, "w", encoding=encoding) as writer:
         try:
             print("save {} records into json file".format(len(json_obj)))
@@ -114,6 +120,8 @@ def save_to_tsv(json_lst: list, tsv_path: str, encoding: str = 'utf8', with_key=
     :param with_key: restore the json key in the first line or not, default False, means not store keys
     :return:
     """
+    output_dir = os.path.dirname(tsv_path)
+    os.makedirs(output_dir, exist_ok=True)
     with open(tsv_path, "w", encoding=encoding) as writer:
         col_name_lst = [it for it in json_lst[0].keys()]
         if with_key:
