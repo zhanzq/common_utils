@@ -3,6 +3,7 @@
 # created by zhanzq
 #
 
+import os
 import time
 import requests
 from common_utils.utils import color_string
@@ -17,6 +18,9 @@ class StockParser:
     def load_stock_name_to_code(self,):
         if self.stock_name_to_code_path is None:
             self.stock_name_to_code_path = "./stock_info.json"
+            if not os.path.exists(self.stock_name_to_code_path):
+                print(f"stock_info file '{self.stock_name_to_code_path}' not found in {os.path.curdir}")
+                return {}
         stock_name_to_code = load_from_json(self.stock_name_to_code_path)
 
         return stock_name_to_code
