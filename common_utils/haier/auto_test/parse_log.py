@@ -427,6 +427,7 @@ def get_semantics(resp_obj,
                   remove_block_kg=True,
                   remove_block_ice_nlu=True,
                   remove_block_dp=True,
+                  remove_block_guochuang=True,
                   remove_extract_domain=True,
                   remove_internal_command=True):
     """
@@ -438,6 +439,7 @@ def get_semantics(resp_obj,
     :param remove_block_kg: 过滤不必要的BlockKg, 默认为True
     :param remove_block_ice_nlu: 过滤不必要的BlockIceNlu, 默认为True
     :param remove_block_dp: 过滤不必要的BlockDp, 默认为True
+    :param remove_block_guochuang: 过滤不必要的BlockGuoChuang, 默认为True
     :param remove_extract_domain: 过滤不必要的Extract*, 默认为True
     :param remove_internal_command: 过滤不必要InternalCommand, 默认为True
     :param resp_obj: 服务返回的json格式数据
@@ -466,6 +468,8 @@ def get_semantics(resp_obj,
             child_semantics = rm_block_ice_nlu(child_semantics)
         if remove_block_dp:
             child_semantics = rm_block_dp(child_semantics)
+        if remove_block_guochuang:
+            child_semantics = rm_block_guochuang(child_semantics)
         if remove_extract_domain:
             child_semantics = rm_extract_domain(child_semantics)
         if remove_internal_command:
@@ -648,6 +652,22 @@ def rm_block_dp(semantics):
     for semantic in semantics:
         domain = semantic.get("domain", "")
         if domain != "BlockDp":
+            filtered.append(semantic)
+
+    return filtered
+
+
+def rm_block_guochuang(semantics):
+    """
+    过滤nlu_info中的BlockGuoChuang类语义信息
+    :param semantics: 待过滤的语义信息
+    :return:
+    """
+    filtered = []
+
+    for semantic in semantics:
+        domain = semantic.get("domain", "")
+        if domain != "BlockGuoChuang":
             filtered.append(semantic)
 
     return filtered
