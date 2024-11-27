@@ -105,7 +105,7 @@ def load_simulation_devices(sim_device_path=None):
         sim_device_path = "/Users/zhanzq/gitProjects/common_utils/common_utils/haier/auto_test/simulation_devices.json"
 
     devices = load_from_json(json_path=sim_device_path)
-    lst = [f"{it['id']}|{it['name']}|{it['type']}|{it['floor']}|{it['room']}|{it['state']}" for it in devices]
+    lst = [f"{it['id']}|{it['nickname']}|{it['type']}|{it['floor']}|{it['room']}|{it['state']}" for it in devices]
     sim_devices = "#".join(lst)
 
     return sim_devices
