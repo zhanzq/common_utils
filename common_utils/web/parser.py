@@ -9,23 +9,27 @@ import requests
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
 from common_utils.utils import format_string
+from common_utils.const.web import USER_AGENT
 import chardet
 
 
 class WEB:
     def __init__(self, url, proxies=None):
         self.url = url
+        self.headers = {"user-agent": USER_AGENT}
         self.proxies = proxies
         self.html = None
 
     def download_file(self, output_dir):
-        resp = requests.request("get", url=self.url, proxies=self.proxies)
+        os.makedirs(output_dir, exist_ok=True)
+        resp = requests.request("get", url=self.url, headers=self.headers, proxies=self.proxies)
         file_name = self.url.split("/")[-1]
         output_path = os.path.join(output_dir, file_name)
+        sz = len(resp.content)
         with open(output_path, "wb") as writer:
             writer.write(resp.content)
 
-        print(f"{file_name} has been downloaded, and stored in {output_dir}")
+        print(f"{file_name}: ({sz} bytes) has been downloaded, and stored in {output_dir}")
         return
 
     def download_web(self,):
