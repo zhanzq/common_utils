@@ -8,6 +8,9 @@
    + 新增`parse_stock_info(stock_info)`，用于解析获取的股票信息，得到json对象，包含名称(name), 开盘价(open), 收盘价(close), 
 当前价(curr)，买方信息(buy)，卖方信息(sell)，日期(date)，时间(time)等
    + 新增`print_stock_info(stock_info)`，用于打印股票的相关信息，方便查看趋势变化
+3. 更新`common_utils.haier.auto_deploy`模块
+   + 新增`add_domain_into_xuanwu(domain, domain_name, category="command")`功能，支持向玄武系统新增领域信息
+4. 修复模板数据插入bug, 保证模板数据有默认槽位信息时，也可以正常处理
 
 ## version 1.4.4
 ### updates

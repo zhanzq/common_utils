@@ -138,13 +138,24 @@ class XuanWu:
         for slot_info in slot_info_lst:
             slot_info.update({"intent_id": intent_id})
             slot_code, dict_code = slot_info.get("slot_code"), slot_info.get("dict_code")
-            if overwrite and (slot_code in curr_slot_codes or dict_code in curr_dict_codes):
-                print(f"{slot_code}-->{dict_code} already exists")
-                continue
-
-            # 构造槽位信息数据
-            slot_item = self._construct_slot(slot_info=slot_info)
-            add_slot_lst.append(slot_item)
+            if slot_code in curr_slot_codes or dict_code in curr_dict_codes:
+                if not overwrite:
+                    print(f"{slot_code}-->{dict_code} already exists")
+                    continue
+                else:
+                    # 更新槽位信息数据
+                    update_slots = []
+                    for slot in slots:
+                        if slot.get("slotCode") == slot_code or slot.get("dictCode") == dict_code:
+                            slot["slotCode"] = slot_code
+                            slot["dictCode"] = dict_code
+                            slot["slotName"] = slot_info.get("slot_name")
+                        update_slots.append(slot)
+                    intent_info["nlpIntentSlots"] = update_slots
+            else:
+                # 构造槽位信息数据
+                slot_item = self._construct_slot(slot_info=slot_info)
+                add_slot_lst.append(slot_item)
 
         # 构造完整的待上传slot数据
         post_data = construct_auto_upload_slot_post_data(intent_info, new_slot_items=add_slot_lst)
@@ -172,6 +183,63 @@ class XuanWu:
         }
 
         return slot_item
+
+    @staticmethod
+    def add_domain_into_xuanwu(domain, domain_name, category="command"):
+        """
+        玄武中新增领域
+        :param domain: 领域code
+        :param domain_name: 领域名称
+        :param category: 类别code, 默认为command, 即家电控制类
+        :return:
+        """
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/domain/add"
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        data = {
+            "cateCode": category,
+            "domainCode": domain,
+            "domainName": domain_name,
+            "domainType": "COMMON",
+            "priority": "0",
+            "dmVersion": "",
+            "selfCtrlFlag": "N"
+        }
+
+        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data))
+        obj_resp = json.loads(response.text)
+
+        return obj_resp
+
+    @staticmethod
+    def remove_domain_from_xuanwu(domain_codes):
+        """
+        从玄武系统中删除领域，领域下不能有意图数据
+        :param domain_codes: 待删除的领域代码，list或str类型，str格式须以','分隔
+        :return:
+        """
+        if type(domain_codes) is list:
+            ids = ",".join(domain_codes)
+
+        url = f"https://aidev.haiersmarthomes.com/xuanwu-admin/jwt/domain/remove?ids={domain_codes}"
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        data = {}
+
+        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data))
+        obj_resp = json.loads(response.text)
+
+        return obj_resp
 
     @staticmethod
     def add_intent_into_xuanwu(domain, intent, intent_name):
@@ -574,7 +642,7 @@ class XuanWu:
         插入模板
         :param domain: 意图所属的领域代码
         :param intent: 意图代码
-        :param template: 待插入的模式列表，以'\n'分隔
+        :param template: 待插入的模式列表，以'\\n'分隔
         :param slot_value_dct: 模板对应的槽位默认值, 默认所有槽位无值
         :param overwrite: 是否覆盖已有模板，默认为False，即不覆盖
         :return:
@@ -928,6 +996,23 @@ class XuanWu:
         return obj
 
     @staticmethod
+    def _preprocess_nlp_template_slot(tpl_slot: dict):
+        params = tpl_slot.get("params")
+        out_tpl_slot = {
+            "isselect": tpl_slot.get("isselect", False),
+            "id": "",
+            "itstId": tpl_slot.get("itstId"),
+            "params": params,
+            "dictCode": params.get("dictCode"),
+            "slotCode": params.get("slotCode"),
+            "slotName": params.get("slotName"),
+            "slotValue": tpl_slot.get("slotValue")
+        }
+    # remove_keys = ["searchValue", "createBy", "createTime", "updateBy", "updateTime", "remark", "tplId", "slotIndex"]
+    # reset_keys = ["id"]
+        return out_tpl_slot
+
+    @staticmethod
     def _preprocess_nlp_template(obj):
         tpl_items = obj["nlpTemlpateSlotVOS"]
         for tpl_item in tpl_items:
@@ -937,6 +1022,10 @@ class XuanWu:
                     tpl_item.pop(key)
                 elif tpl_item[key] == "0" and key in ["status"]:
                     tpl_item[key] = ""
+            tpl_slots = []
+            for tpl_slot in tpl_item["nlpTemplateSlots"]:
+                tpl_slots.append(XuanWu._preprocess_nlp_template_slot(tpl_slot))
+            tpl_item["nlpTemplateSlots"] = tpl_slots[::-1]
         obj["nlpTemlpateSlotVOS"] = tpl_items
 
         return obj
@@ -977,7 +1066,7 @@ def parse_template_lst(intent_info):
 
 def construct_auto_upload_template_post_data(old_intent_info, new_tpl_item):
     # 构造待上传的完整数据
-    old_intent_info["nlpTemlpateSlotVOS"].insert(0, new_tpl_item)
+    old_intent_info["nlpTemlpateSlotVOS"].append(new_tpl_item)
 
     return old_intent_info
 
@@ -985,7 +1074,7 @@ def construct_auto_upload_template_post_data(old_intent_info, new_tpl_item):
 def construct_auto_upload_slot_post_data(old_intent_info, new_slot_items):
     # 构造待上传的完整数据
     for item in new_slot_items:
-        old_intent_info["nlpIntentSlots"].insert(0, item)
+        old_intent_info["nlpIntentSlots"].append(item)
 
     return old_intent_info
 
@@ -1034,11 +1123,11 @@ from common_utils.text_io.excel import load_json_list_from_xlsx
 
 def main():
     xuanwu = XuanWu()
-    domain = "Dev.oven"
-    intent = "increaseTemperature"
-    tpl = "[请帮需要让忙我把将务必尽快速你踢给替立即]*{<deviceName>}.{0,3}{<position>}?(抓紧|赶紧|赶?快)[一点些]*儿?(烘焙|烧?烤)[烤完毕熟火好出来制]*儿?[的啊吧啦呢呀哈行好吗哦呗了]*"
+    domain = "Steamer"
+    intent = "statusEnquiry"
+    tpl = "{<room>}?的?{<deviceName>}(做|工作)(好|完)了吗"
 
-    res = xuanwu.remove_template(domain=domain, intent=intent, template=tpl)
+    res = xuanwu.insert_template(domain=domain, intent=intent, template=tpl, slot_value_dct={"property": "lefttime"})
     print(res)
 
     return
