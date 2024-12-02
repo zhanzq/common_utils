@@ -968,6 +968,8 @@ def get_do_nlp_analysis_info_from_log(sn, env="test", verbose=False):
     print(format_string(f"do_nlp_analysis info: env={env}, query={query}"))
 
     data = resp.get("data")
+    if not data:
+        return data
     nlp_analysis_info = {
         "category": data.get("category"),
         "nlpVersion": data.get("nlpVersion"),
