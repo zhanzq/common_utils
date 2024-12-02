@@ -276,8 +276,9 @@ def get_log_id(sn, env="test", is_last_req=True):
                     for key, val in mid_log_id_map.items():
                         log_id_map[key] = (middle_sn, val)
             return log_id_map
-        except TypeError:
-            time.sleep(1)
+        except Exception as e:
+            print(e)
+            time.sleep(0.1)
 
     return {}
 
@@ -298,6 +299,8 @@ def parse_nlu_receiver_info_from_log(resp_nlu_receiver):
 
 
 def _parse_service_info(service_info):
+    if not service_info:
+        return "服务出错，未抽取出query", {}
     data = service_info.get("data", {})
     req = json.loads(data["reqBody"]) if "reqBody" in data else {}
     param = req.get("args0", req)
@@ -324,7 +327,8 @@ def get_query_by_sn(sn, env="test", verbose=False):
     if not log_id_map:
         return None
     service_name = "dialog-system:doNlpAnalysis"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, _ = _parse_service_info(service_info)
     if verbose:
@@ -350,7 +354,8 @@ def get_nlu_receiver_info_from_log(sn, env="test", verbose=False):
     if not log_id_map:
         return None
     service_name = "dialog-system:NluReceiver"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"nlu receiver info: env={env}, query={query}"))
@@ -386,8 +391,10 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
     while sn[date_start] != '2':
         date_start += 1
     date = f"{sn[date_start:date_start+8]}"
-
-    log_id = log_id_map.get(service_name)[1]
+    if service_name not in log_id_map:
+        return None
+    else:
+        log_id = log_id_map.get(service_name)[1]
     if env == "test":
         url_base = "https://aitest.haiersmarthomes.com:11001/bomp-logdata-adapter/datalog/getHbaseChainLogDetail"
     elif env == "sim":
@@ -413,6 +420,8 @@ def get_service_info(sn, log_id_map, service_name, env="test"):
 
 
 def get_middle_sn(service_info):
+    if not service_info:
+        return None
     resp = service_info.get("data").get("response")
     resp = json.loads(resp)
     middle_sn = resp.get("data").get("middleSn")
@@ -520,6 +529,8 @@ def rm_block_semantics(semantics, remove_nlu=True):
     :param remove_nlu: 是否去除BlockNLU语义, 默认去除BlockNLU
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
     block_domain = set()
     for semantic in semantics:
@@ -545,6 +556,8 @@ def rm_block_template(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
     block_domain = set()    # 模板禁掉的领域
     for semantic in semantics:
@@ -567,6 +580,8 @@ def rm_block_nlu(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -583,6 +598,8 @@ def rm_block_corpus(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -599,6 +616,8 @@ def rm_block_ccg(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -615,6 +634,8 @@ def rm_block_kg(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -631,6 +652,8 @@ def rm_block_ice_nlu(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -647,6 +670,8 @@ def rm_block_dp(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -663,6 +688,8 @@ def rm_block_guochuang(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
 
     for semantic in semantics:
@@ -679,6 +706,8 @@ def rm_internal_command(semantics):
     :param semantics: 待过滤的语义信息
     :return:
     """
+    if not semantics:
+        return semantics
     filtered = []
     for semantic in semantics:
         if "domain" in semantic and semantic["domain"] != "InternalCommand":
@@ -693,6 +722,8 @@ def rm_extract_domain(nlu_info):
     :param nlu_info: 待过滤的nlu信息
     :return:
     """
+    if not nlu_info:
+        return nlu_info
     filtered = []
     for it in nlu_info:
         if "domain" in it and it["domain"] and not it["domain"].startswith("Extract"):
@@ -713,7 +744,8 @@ def get_tpl_match_info_from_log(sn, env="test", verbose=False):
         return None
 
     service_name = "NluTemplate:nlu"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
 
@@ -766,7 +798,8 @@ def block_check(sn, domain_lst, env="test", verbose=False):
         return None
 
     service_name = "NluTemplate:nlu"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
 
@@ -831,7 +864,8 @@ def get_log_trace_info_from_log(sn, env="test", verbose=False):
         return None
 
     service_name = "dialog-system:LogTrace"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"log trace info: env={env}, query={query}"))
@@ -894,7 +928,8 @@ def get_do_nlu_info_from_log(sn, env="test", verbose=False):
     """
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:doNlu"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"do_nlu info: env={env}, query={query}"))
@@ -926,13 +961,15 @@ def get_do_nlp_analysis_info_from_log(sn, env="test", verbose=False):
     """
     log_id_map = get_log_id(sn, env)
     service_name = "dialog-system:doNlpAnalysis"
-    sn = log_id_map.get(service_name)[0]
+    if service_name in log_id_map:
+        sn = log_id_map.get(service_name)[0]
     service_info = get_service_info(sn, log_id_map, service_name, env)
     query, resp = _parse_service_info(service_info)
     print(format_string(f"do_nlp_analysis info: env={env}, query={query}"))
 
     data = resp.get("data")
     nlp_analysis_info = {
+        "category": data.get("category"),
         "nlpVersion": data.get("nlpVersion"),
         "nlp_response": data.get("response"),
         "results": data.get("results")
