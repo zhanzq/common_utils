@@ -11,6 +11,14 @@
 3. 更新`common_utils.haier.auto_deploy`模块
    + 新增`add_domain_into_xuanwu(domain, domain_name, category="command")`功能，支持向玄武系统新增领域信息
 4. 修复模板数据插入bug, 保证模板数据有默认槽位信息时，也可以正常处理
+5. 升级`common_utils.haier.auto_test.nlu`模块，集成到NLU类，
+   + `load_simulation_devices(self, simulation_device_path=None)`功能，支持加载模拟设备
+   + `get_nlu_service_response(query, env="local", device="X20"):`功能，支持获取`env`环境下的nlu服务结果
+   + `parse_nlu_response(json_resp)`功能，支持nlu结果解析，得到领域、意图、槽位等信息
+   + `get_dm_service_response(self, query, env="service", device="X20", simulation=True)`功能，支持获取`env`环境下的dm服务结果
+   + `parse_dm_response(self, json_resp)`功能，支持dm结果解析，得到`nlpVersion`、领域、意图、槽位等信息
+   + `get_tpl_service_response(query)`功能，支持获取开发环境下的template引擎匹配结果
+   + `parse_tpl_response(json_resp)`功能，支持template结果解析，得到匹配的模板信息
 
 ## version 1.4.4
 ### updates
