@@ -7,7 +7,7 @@
 
 import json
 import requests
-from common_utils.haier.auto_test.parse_log import get_semantics_info
+from common_utils.haier.auto_test.parse_log import LogParser
 from common_utils.text_io.txt import load_from_json
 
 
@@ -216,7 +216,7 @@ class NLU:
 
     @staticmethod
     def parse_tpl_response(json_resp):
-        return get_semantics_info(json_resp)
+        return LogParser.get_semantics_info(json_resp)
 
     @staticmethod
     def _parse_dm_response_params(params):
@@ -251,7 +251,6 @@ def main():
     print(f"nlu_info: \n{nlu_info}\n")
 
     # do tpl
-
     tpl_resp = parser.get_tpl_service_response(query)
     tpl_info = parser.parse_tpl_response(tpl_resp)
     print(f"tpl_info: \n{tpl_info}\n")
