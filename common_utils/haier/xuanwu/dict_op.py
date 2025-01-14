@@ -31,7 +31,7 @@ def get_word_dict_in_xuanwu(dict_code, env="dev"):
         "X-Requested-With": "XMLHttpRequest",
     }
     method = "POST"
-    payload = f"dictCode={dict_code}&word=&synonym=&pageSize=100000&pageNum=1&orderByColumn=&isAsc=asc"
+    payload = f"dictCode={dict_code}&word=&synonym=&pageSize=1000000&pageNum=1&orderByColumn=&isAsc=asc"
 
     response = requests.request(method, url, headers=headers, data=payload)
 
