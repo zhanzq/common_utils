@@ -128,7 +128,8 @@ def save_to_tsv(json_lst: list, tsv_path: str, encoding: str = 'utf8', with_key=
             writer.write("\t".join(col_name_lst) + "\n")
         for json_obj in json_lst:
             try:
-                out_line = "\t".join([json_obj[key] for key in col_name_lst])
+                # 将所有数据转成字符串处理
+                out_line = "\t".join([str(json_obj[key]) for key in col_name_lst])
                 writer.write(out_line + "\n")
             except Exception as e:
                 print(e)
