@@ -8,6 +8,7 @@ import json
 import requests
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup as BS
+from bs4.element import NavigableString
 from common_utils.utils import format_string
 from common_utils.const.web import USER_AGENT
 import chardet
@@ -18,7 +19,8 @@ class WEB:
         self.url = url
         self.headers = {"user-agent": USER_AGENT}
         self.proxies = proxies
-        self.html = None
+        self.html = self.download_web()
+        self.bs = BS(self.html, features="html.parser")
 
     def download_file(self, output_dir):
         os.makedirs(output_dir, exist_ok=True)
@@ -43,46 +45,44 @@ class WEB:
                 encoding = chardet.detect(response.content)['encoding']
                 response.encoding = encoding
                 html_content = response.text
-                self.html = html_content
+                return html_content
             else:
                 print(f"请求失败，状态码：{response.status_code}")
         except requests.exceptions.RequestException as e:
             print("请求发生异常：", str(e))
 
-        return
+        return None
 
-    def _get_item_by_text(self, father, text, res=[]):
+    def _get_item_by_text(self, father, text, res=None):
+        if res is None:
+            res = set()
         for child in father.children:
             if text in child.text:
+                if type(child) is NavigableString:
+                    res.add(child)
+                    continue
                 try:
-                    if child.children is None:
-                        res.append(child)
+                    if child.children is None or type(child.children) is NavigableString:
+                        res.add(child)
                     else:
                         self._get_item_by_text(child, text, res)
                 except Exception as e:
                     print(e)
-                    res.append(child)
+                    res.add(child)
         return
 
     def _get_item_by_text_in_div(self, text):
-        if not self.html:
-            self.download_web()
-        bs = BS(self.html)
-        divs = bs.find_all("div")
-        res = []
+        divs = self.bs.body.find_all("div")
+        res = set()
         for div in divs:
             self._get_item_by_text(div, text, res)
 
         return res
 
     def _get_item_by_text_in_li(self, text):
-        if not self.html:
-            self.download_web()
-        bs = BS(self.html)
+        lis = self.bs.body.find_all("li")
 
-        lis = bs.find_all("li")
-
-        res = []
+        res = set()
         for li in lis:
             self._get_item_by_text(li, text, res)
 
@@ -91,9 +91,27 @@ class WEB:
     def get_item_by_text(self, text):
         res = self._get_item_by_text_in_li(text)
         if not res:
-            return self._get_item_by_text_in_div(text)
-        else:
-            return res
+            res = self._get_item_by_text_in_div(text)
+
+        res_lst = []
+        for it in res:
+            lst = []
+            p = it.find_parent()
+            while p:
+                if p.name == "body":
+                    break
+                attr = ""
+                if "id" in p.attrs:
+                    attr = f"#{p.attrs['id']}"
+                elif "class" in p.attrs:
+                    attr = f".{p.attrs['class'][0]}"
+                lst.append(f"{p.name}{attr}")
+                p = p.find_parent()
+            lst = lst[::-1]
+            if len(lst) > 5:
+                lst = lst[-5:]
+            res_lst.append(" ".join(lst))
+        return res_lst
 
     @staticmethod
     def get_related_links(item, depth=5):
@@ -102,7 +120,8 @@ class WEB:
             try:
                 for a in item.find_all("a"):
                     links.add(a["href"])
-            except:
+            except Exception as e:
+                print(e)
                 pass
             item = item.parent
 
@@ -113,10 +132,7 @@ class WEB:
         return links
 
     def get_item_by_href(self, href):
-        if not self.html:
-            self.download_web()
-        bs = BS(self.html)
-        lst = bs.find_all("a")
+        lst = self.bs.find_all("a")
         for it in lst:
             if it["href"] == href:
                 print(format_string("<a> attrs"))
@@ -126,12 +142,7 @@ class WEB:
         return None
 
     def get_links_by_attr(self, **attr):
-        if not self.html:
-            self.download_web()
-
-        bs = BS(self.html)
-
-        lst = bs.find_all("a", **attr)
+        lst = self.bs.find_all("a", **attr)
         links = []
         parsed_url = urlparse(self.url)
         base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
