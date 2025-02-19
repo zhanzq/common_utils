@@ -74,8 +74,12 @@ def _set_adaptive_column_width(sheet):
 
 
 def _eval_cell(val):
+    if type(val) is not str:
+        return val
     try:
         val = eval(val)
+        if type(val) is int:  # int类型的字符串不进行类型转换
+            val = str(val)
     except NameError:
         pass
     finally:
@@ -193,8 +197,9 @@ def save_json_list_into_sheet(wb, json_lst, col_name_lst=None, sheet_name="Title
             if val is None:
                 val = ""
             if type(val) is float or type(val) is int:
-                val = str(val)
-                # pass
+                # 数值类型不强制转为str
+                # val = str(val)
+                pass
             else:
                 val = str(val)
             sheet.cell(row=i + 2, column=j + 1).value = val  # save the original type
