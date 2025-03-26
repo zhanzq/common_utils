@@ -1108,6 +1108,9 @@ def parse_xuanwu_intent_info(intent_info):
     out = {}
     for intent in intent_lst:
         code = intent["intentCode"]
+        status = intent["status"]
+        if status == "1":  # 状态为'1'表示意图已停用，状态为'0'表示正常
+            continue
         item = {
             "name": intent["intentName"],
             "id": intent["id"],
