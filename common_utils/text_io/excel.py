@@ -77,9 +77,10 @@ def _eval_cell(val):
     if type(val) is not str:
         return val
     try:
+        org_val = val
         val = eval(val)
         if type(val) is int:  # int类型的字符串不进行类型转换
-            val = str(val)
+            val = str(org_val)
     except NameError:
         pass
     finally:

@@ -94,7 +94,7 @@ def save_to_json(json_obj: dict, json_path: str, encoding: str = 'utf8'):
 def load_from_json(json_path: str, encoding: str = 'utf8'):
     """
     load json object from file
-    :param json_path: type: str, file path storing json objects, usually endswith ".jsonl"
+    :param json_path: type: str, file path storing json object, usually endswith ".json"
     :param encoding: data encoding, default 'utf8'
     :return: json object
     """

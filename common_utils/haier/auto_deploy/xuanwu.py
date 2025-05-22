@@ -125,7 +125,7 @@ class XuanWu:
             # 更新领域数据
             self.update_domain_info(domain_to_update=domain)
 
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_id = self.domain_intent_to_id.get(domain, {}).get(intent, {}).get("id")
         # 获取intent所有信息
         intent_info = self._get_detail_intent_info(intent_id)
 
@@ -520,7 +520,7 @@ class XuanWu:
         :param verbose: 是否打印详细的日志信息，默认打印
         :return: slot_info, tpl_info
         """
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_id = self.domain_intent_to_id.get(domain, {}).get(intent, {}).get("id")
         if not intent_id:
             return None, None
 
@@ -548,7 +548,7 @@ class XuanWu:
         :return:
         """
 
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_id = self.domain_intent_to_id.get(domain, {}).get(intent, {}).get("id")
 
         if not intent_id:
             return "意图未找到"
@@ -581,7 +581,7 @@ class XuanWu:
         :return:
         """
 
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_id = self.domain_intent_to_id.get(domain, {}).get(intent, {}).get("id")
 
         if not intent_id:
             return "意图未找到"
@@ -606,7 +606,7 @@ class XuanWu:
         :return:
         """
 
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_id = self.domain_intent_to_id.get(domain, {}).get(intent, {}).get("id")
 
         if not intent_id:
             return "意图未找到"
@@ -648,7 +648,7 @@ class XuanWu:
         :return:
         """
 
-        intent_id = self.domain_intent_to_id.get(domain).get(intent).get("id")
+        intent_id = self.domain_intent_to_id.get(domain, {}).get(intent, {}).get("id")
 
         if not intent_id:
             return "意图未找到"
