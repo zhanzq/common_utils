@@ -427,7 +427,7 @@ class LogParser:
         response = requests.request("GET", url, headers=headers, data=payload)
 
         service_info = json.loads(response.text)
-        if "data" not in service_info or "reqBody" not in service_info["data"]:
+        if not service_info.get("data") or  not service_info["data"].get("reqBody"):
             return self.get_service_info_by_log_id(log_id=log_id, sn=self._mid_sn)
         else:
             return service_info
