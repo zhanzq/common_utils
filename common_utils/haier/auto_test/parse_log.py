@@ -25,6 +25,7 @@ def json_to_yaml(data):
 
 class LogParser:
     def __init__(self, sn=None, env="test"):
+        self._mid_sn = None
         self._sn = sn
         self._env = env
         self._log_id_map = {}
@@ -289,6 +290,7 @@ class LogParser:
                         mid_log_id_map = self.get_log_id(sn=middle_sn, is_last_req=False)
                         for key, val in mid_log_id_map.items():
                             log_id_map[key] = (middle_sn, val)
+                        self._mid_sn = middle_sn
                 return log_id_map
             except Exception as e:
                 print(e)
@@ -389,7 +391,7 @@ class LogParser:
 
         return nlu_receiver_info
 
-    def get_service_info_by_log_id(self, log_id):
+    def get_service_info_by_log_id(self, log_id, sn=None):
         """
                 获取具体服务的结果信息
                 :param service_name: 服务名称，如"NluTemplate:nlu"
@@ -397,7 +399,8 @@ class LogParser:
         if not log_id:
             return None
 
-        sn = self._sn
+        if not sn:
+            sn = self._sn
         # date: 服务日志写入时间, 格式为"%Y%m%d",如"20230308"
         date_start = 0
         while sn[date_start] != '2':
@@ -424,7 +427,10 @@ class LogParser:
         response = requests.request("GET", url, headers=headers, data=payload)
 
         service_info = json.loads(response.text)
-        return service_info
+        if "data" not in service_info or "reqBody" not in service_info["data"]:
+            return self.get_service_info_by_log_id(log_id=log_id, sn=self._mid_sn)
+        else:
+            return service_info
 
     def get_service_info(self, service_name):
         """
