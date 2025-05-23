@@ -1,4 +1,10 @@
 # 常用工具包
+## version 1.4.6
+### updates
+1. 更新`common_utils.haier.auto_deploy.xuanwu`模块
+   + 新增`get_supported_devices_by_domain(domain, env)`，用于获取指定领域在指定环境下的支持设备列表
+
+
 ## version 1.4.5
 ### updates
 1. 更新`common_utils.utils`模块

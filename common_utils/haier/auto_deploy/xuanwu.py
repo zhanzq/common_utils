@@ -25,6 +25,42 @@ class XuanWu:
         self.slot_info_dct = None
         self.load_resource()
 
+    def get_supported_devices_by_domain(self, domain, env="dev"):
+        """
+        获取玄武中某个领域下所有支持的设备名称
+        :param domain:
+        :param env:
+        :return:
+        """
+        url = {
+            "dev": "https://aidev.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain",
+            "test": "https://aitest.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain",
+            "sim": "https://aisim.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain"
+        }[env]
+        cookie = {
+            "dev": COOKIE_XUANWU_DEV,
+            "test": COOKIE_XUANWU_TEST,
+            "sim": COOKIE_XUANWU_SIM
+        }[env]
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cookie": cookie,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        payload = ""
+        response = requests.request(method, url, headers=headers, data=payload)
+        obj_resp = json.loads(response.text)
+        rows = obj_resp.get("rows")
+        for row in rows:
+            domain_code = row.get("domainCode")
+            if domain == domain_code:
+                return row.get("params", {}).get("deviceName")
+
+        return None
+
     def load_resource(self):
         self.get_domain_intent_to_id()
         self.get_slot_info_dct()
