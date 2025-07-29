@@ -287,6 +287,7 @@ class LogParser:
                     log_id = log_id_map.get("dialog-system:doNlpAnalysis", [self._sn, None])[1]
                     middle_sn = self.get_middle_sn(log_id=log_id)
                     if middle_sn:
+                        print(f"middle sn: {middle_sn}")
                         mid_log_id_map = self.get_log_id(sn=middle_sn, is_last_req=False)
                         for key, val in mid_log_id_map.items():
                             log_id_map[key] = (middle_sn, val)
@@ -968,6 +969,8 @@ class LogParser:
         nlp_analysis_info = {
             "category": data.get("category"),
             "nlpVersion": data.get("nlpVersion"),
+            "isDialog": data.get("isDialog"),
+            "middleSn": data.get("middleSn"),
             "nlp_response": data.get("response"),
             "results": data.get("results")
         }

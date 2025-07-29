@@ -147,6 +147,17 @@ def convert_curl_to_python_request(curl_code):
         data_lst = ["    " + it for it in data_lst]
         data = "\n".join(data_lst).strip()
 
+    if data:
+        data_code = f"""
+    payload = {data}
+    method = "POST"
+"""
+    else:
+        data_code = f"""
+    payload = ""
+    method = "GET"
+"""
+
     codes = f"""
 import requests
 import json
@@ -155,12 +166,7 @@ import json
 def do_request():
     url = "{url}"
     headers = {headers_str}
-    method = "GET"
-    payload = ""
-    data = {data}
-    if data:
-        payload = data
-        method = "POST"
+    {data_code}
 
     response = requests.request(method, url, headers=headers, data=payload)
     obj_resp = json.loads(response.text)
