@@ -3,6 +3,9 @@
 ### updates
 1. 更新`common_utils.haier.auto_deploy.xuanwu`模块
    + 新增`get_supported_devices_by_domain(domain, env)`，用于获取指定领域在指定环境下的支持设备列表
+   + 新增`edit_executor_device_supported_domains(device_code, domain_codes, env="dev")`，用于编辑玄武中“执行设备支持领域”，即指定入口设备时，所有支持的领域列表
+   + 新增`get_executor_device_supported_domains(device_type=None, device_name=None, env="dev")`，用于获取玄武中“执行设备支持领域”，与“入口设备支持领域”基本相同，即指定入口设备下所有支持的领域名称，当同时指定入口设备类型和名称时，优先使用名称进行匹配
+   + 新增`get_domains_related_to_executor_devices(domain, env="dev")`，用于获取玄武中“领域关联执行设备”，nlu解析出领域后，可以根据此，筛选出相关的设备
 
 
 ## version 1.4.5

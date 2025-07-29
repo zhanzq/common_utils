@@ -9,7 +9,11 @@ import time
 import requests
 from urllib.parse import quote
 from common_utils.text_io.txt import load_from_json, save_to_json
-from common_utils.const.web import USER_AGENT, COOKIE_XUANWU_DEV, COOKIE_XUANWU_TEST, COOKIE_XUANWU_SIM
+from common_utils.const.web import (USER_AGENT,
+                                    COOKIE_XUANWU_DEV,
+                                    COOKIE_XUANWU_TEST,
+                                    COOKIE_XUANWU_SIM,
+                                    COOKIE_XUANWU_SERVICE)
 from bs4 import BeautifulSoup as BS
 
 
@@ -25,22 +29,164 @@ class XuanWu:
         self.slot_info_dct = None
         self.load_resource()
 
-    def get_supported_devices_by_domain(self, domain, env="dev"):
+    @staticmethod
+    def edit_executor_device_supported_domains(device_code, domain_codes, env="dev"):
         """
-        获取玄武中某个领域下所有支持的设备名称
-        :param domain:
-        :param env:
+        编辑玄武中“执行设备支持领域”，即指定入口设备时，所有支持的领域列表
+        :param device_code: 设备编码，如"1", "70"
+        :param domain_codes: 领域列表，如"Cabinet,NetworkStatus", 多个领域之间用','分隔
+        :param env: ["dev", "test", "sim"], 默认为"dev"
+        :return
+        """
+        if not device_code or not domain_codes:
+            print("error: 设备代码和领域代码列表均不能为空")
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/nlp/executor/editDomainUnderDevice"
+        cookie = {
+            "dev": COOKIE_XUANWU_DEV,
+            "test": COOKIE_XUANWU_TEST,
+            "sim": COOKIE_XUANWU_SIM,
+        }[env]
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Cookie": cookie,
+            "User-Agent": USER_AGENT
+        }
+
+        payload = f"deviceCode={device_code}&domainArray={domain_codes}"
+        method = "POST"
+
+        response = requests.request(method=method, url=url, headers=headers, data=payload)
+        obj_resp = json.loads(response.text)
+
+        return obj_resp
+
+    @staticmethod
+    def _get_executor_device_supported_domains(device_code, env="dev"):
+        """
+        获取玄武中"执行设备支持领域"数据
+        :param device_code: 执行设备编码，如"3", "168"
+        :param env: ["dev", "test", "sim"], 默认为"dev"
+        :return:
+        """
+        url_domain = {
+            "dev": "https://aidev.haiersmarthomes.com",
+            "test": "https://aitest.haiersmarthomes.com",
+            "sim": "https://aisim.haiersmarthomes.com",
+            "service": "https://aiservice.haier.net"
+        }[env]
+        url_path = "/xuanwu-admin/nlp/executor/loadDomainTreeDataByDevice"
+        url = f"{url_domain}{url_path}?deviceCode={device_code}"
+        cookie = {
+            "dev": COOKIE_XUANWU_DEV,
+            "test": COOKIE_XUANWU_TEST,
+            "sim": COOKIE_XUANWU_SIM,
+            "service": COOKIE_XUANWU_SERVICE
+        }[env]
+        headers = {
+            "Content-Type": "*/*",
+            "Cookie": cookie,
+            "User-Agent": USER_AGENT
+        }
+        method = "GET"
+        payload = ""
+        # payload = f"params%5BdeviceType%5D={entry_type}&pageSize=100&pageNum=1&orderByColumn=&isAsc=asc"
+        response = requests.request(method, url, headers=headers, data=payload)
+        obj_resp = json.loads(response.text)
+
+        res = []
+        for it in obj_resp:
+            if it.get("checked"):
+                res.append(it.get("name"))
+        return ",".join(res)
+
+    @staticmethod
+    def get_executor_device_supported_domains(device_type=None, device_name=None, env="dev"):
+        """
+        获取玄武中“执行设备支持领域”，与“入口设备支持领域”基本相同，即指定入口设备下所有支持的领域名称，当同时指定入口设备类型和名称时，优先使用名称进行匹配
+        :param device_type: 执行设备类型，如"SteamBaker", "Steamer", "HeaterGas"
+        :param device_name: 执行设备名称，如"蒸烤箱", "蒸箱", "燃热热水器"
+        :param env: ["dev", "test", "sim"], 默认为"dev"
+        :return:
+        """
+        if not device_type and not device_name:
+            print("Error: 执行设备的类型和名称不能同时为 None")
+            return
+
+        url_domain = {
+            "dev": "https://aidev.haiersmarthomes.com",
+            "test": "https://aitest.haiersmarthomes.com",
+            "sim": "https://aisim.haiersmarthomes.com",
+            "service": "https://aiservice.haier.net"
+        }[env]
+        url_path = "/xuanwu-admin/nlp/listener/groupByDevice"
+        url = f"{url_domain}{url_path}"
+
+        cookie = {
+            "dev": COOKIE_XUANWU_DEV,
+            "test": COOKIE_XUANWU_TEST,
+            "sim": COOKIE_XUANWU_SIM,
+            "service": COOKIE_XUANWU_SERVICE
+        }[env]
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Content-Type": "application/json;charset=UTF-8",
+            "Cookie": cookie,
+            "User-Agent": USER_AGENT
+        }
+        method = "POST"
+        payload = ""
+        # payload = f"params%5BdeviceType%5D={entry_type}&pageSize=10&pageNum=1&orderByColumn=&isAsc=asc"
+        response = requests.request(method, url, headers=headers, data=payload)
+        obj_resp = json.loads(response.text)
+        rows = obj_resp.get("rows")
+
+        for row in rows:
+            device_code = row.get("ctrlDeviceCode")
+            params = row.get("params", {})
+            _device_name = params.get("ctrlDeviceName")
+            _device_type = params.get("ctrlDeviceType")
+            if device_name:
+                if device_name == _device_name:
+                    res = {
+                        "deviceCode": device_code,
+                        "deviceName": _device_name,
+                        "deviceType": _device_type,
+                        "domainCode": XuanWu._get_executor_device_supported_domains(device_code=device_code, env=env)
+                    }
+                    return res
+            else:
+                if device_type and device_type == _device_type:
+                    res = {
+                        "deviceCode": device_code,
+                        "deviceName": _device_name,
+                        "deviceType": _device_type,
+                        "domainCode": XuanWu._get_executor_device_supported_domains(device_code=device_code, env=env)
+                    }
+                    return res
+
+        return None
+
+    @staticmethod
+    def get_domains_related_to_executor_devices(domain, env="dev"):
+        """
+        获取玄武中“领域关联执行设备”，nlu解析出领域后，可以根据此，筛选出相关的设备
+        :param domain: 领域code，如"SteamBaker", "Dev.oven"
+        :param env: ["dev", "test", "sim"], 默认为"dev"
         :return:
         """
         url = {
             "dev": "https://aidev.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain",
             "test": "https://aitest.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain",
-            "sim": "https://aisim.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain"
+            "sim": "https://aisim.haiersmarthomes.com/xuanwu-admin/nlp/executor/groupByDomain",
+            "service": "https://aiservice.haier.net/xuanwu-admin/nlp/executor/groupByDomain"
         }[env]
         cookie = {
             "dev": COOKIE_XUANWU_DEV,
             "test": COOKIE_XUANWU_TEST,
-            "sim": COOKIE_XUANWU_SIM
+            "sim": COOKIE_XUANWU_SIM,
+            "service": COOKIE_XUANWU_SERVICE
         }[env]
         headers = {
             "Accept": "application/json, text/plain, */*",
