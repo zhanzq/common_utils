@@ -345,9 +345,9 @@ class LogParser:
 
     def get_query_by_sn(self, verbose=False):
         """
-            获取dialog-system:doNlpAnalysis服务的结果
-            :param verbose: 是否打印详细信息, 默认不打印
-            """
+        获取dialog-system:doNlpAnalysis服务的结果
+        :param verbose: 是否打印详细信息, 默认不打印
+        """
         service_name = "dialog-system:doNlpAnalysis"
         if service_name not in self.get_log_id_map():
             return "ERROR doNlpAnalysis"
@@ -364,17 +364,19 @@ class LogParser:
 
         return query
 
-    def get_nlu_receiver_info_from_log(self, verbose=False):
+    def get_nlu_receiver_info_from_log(self, verbose=False, debug=True):
         """
             获取dialog-system:NluReceiver服务的结果
             :param verbose: 是否打印详细信息, 默认不打印
+            :param debug: 是否打印调试信息, 默认打印
             """
         service_name = "dialog-system:NluReceiver"
         if service_name not in self.get_log_id_map():
             return "ERROR dialog-system:NluReceiver"
         service_info = self.get_service_info(service_name)
         query, resp = self._parse_service_info(service_info)
-        print(format_string(f"nlu receiver info: env={self._env}, query={query}"))
+        if debug:
+            print(format_string(f"nlu receiver info: env={self._env}, query={query}"))
 
         nlu_receiver_info = self.parse_nlu_receiver_info_from_log(resp_nlu_receiver=resp)
 
@@ -394,9 +396,10 @@ class LogParser:
 
     def get_service_info_by_log_id(self, log_id, sn=None):
         """
-                获取具体服务的结果信息
-                :param service_name: 服务名称，如"NluTemplate:nlu"
-                """
+        根据日志id，获取具体服务的结果信息
+        :param log_id: 服务对应的日志id
+        :param sn: 服务对应的sn号, 默认为None, 即使用初始化的sn号
+        """
         if not log_id:
             return None
 
@@ -466,7 +469,7 @@ class LogParser:
                       remove_block_dp=True,
                       remove_block_guochuang=True,
                       remove_extract_domain=True,
-                      remove_internal_command=True):
+                      remove_internal_command=False):
         """
         获取服务（如nlu, dm, template等）返回的结果中的semantics信息，并进行过滤
         :param remove_block_template: 过滤不必要的BlockTemplate, 默认为True
@@ -478,7 +481,7 @@ class LogParser:
         :param remove_block_dp: 过滤不必要的BlockDp, 默认为True
         :param remove_block_guochuang: 过滤不必要的BlockGuoChuang, 默认为True
         :param remove_extract_domain: 过滤不必要的Extract*, 默认为True
-        :param remove_internal_command: 过滤不必要InternalCommand, 默认为True
+        :param remove_internal_command: 不能过滤InternalCommand, 可能跟温度/亮度专题相关
         :param resp_obj: 服务返回的json格式数据
         :return:
         """
@@ -850,13 +853,14 @@ class LogParser:
             "systemSlotEmpty":true,
             "hasDeviceNickname":false,
             "domain":"ElectricHeatingTable",
-            "channel":"nlu_unlu",
+            "channel":"nlu_model",
             "intent":"decreaseWarmGear"
         }
         """
         slots = child_semantics.get("slots", [])
         slots = {it.get("name", None): it.get("value", None) for it in slots}
         nlu_info = {
+            "channel": child_semantics.get("channel", "nlu_model"),
             "domain": child_semantics.get("domain", None),
             "intent": child_semantics.get("intent", None),
             "slots": slots,
@@ -922,17 +926,19 @@ class LogParser:
 
         return device_exec_result
 
-    def get_do_nlu_info_from_log(self, verbose=False):
+    def get_do_nlu_info_from_log(self, verbose=False, debug=True):
         """
         获取dialog-system:doNlu服务的结果
         :param verbose: 是否打印日志信息，默认为不打印
+        :param debug: 是否打印调试信息，默认为打印
         """
         service_name = "dialog-system:doNlu"
         if service_name not in self.get_log_id_map():
             return "ERROR doNlu"
         service_info = self.get_service_info(service_name)
         query, resp = self._parse_service_info(service_info)
-        print(format_string(f"do_nlu info: env={self._env}, query={query}"))
+        if debug:
+            print(format_string(f"do_nlu info: env={self._env}, query={query}"))
 
         semantics = resp.get("semantics", [])
         nlu_info = None
@@ -951,17 +957,22 @@ class LogParser:
 
         return nlu_info
 
-    def get_do_nlp_analysis_info_from_log(self, verbose=False):
+    def get_do_nlp_analysis_info_from_log(self, verbose=False, debug=True):
         """
         获取dialog-system:doNlpAnalysis服务的结果
         :param verbose: 是否打印日志信息，默认为不打印
+        :param debug: 是否打印调试信息，默认为打印
         """
         service_name = "dialog-system:doNlpAnalysis"
         if service_name not in self.get_log_id_map():
             return "ERROR doNlpAnalysis"
         service_info = self.get_service_info(service_name)
+        request_json = service_info.get("data").get("reqBody")
+        args = json.loads(request_json)
+        request_data = args.get("args0", {})
         query, resp = self._parse_service_info(service_info)
-        print(format_string(f"do_nlp_analysis info: env={self._env}, query={query}"))
+        if debug:
+            print(format_string(f"do_nlp_analysis info: env={self._env}, query={query}"))
 
         data = resp.get("data")
         if not data:
@@ -969,9 +980,13 @@ class LogParser:
         nlp_analysis_info = {
             "category": data.get("category"),
             "nlpVersion": data.get("nlpVersion"),
+            "masterDeviceId": request_data.get("masterDeviceId"),
+            "entryDeviceType": data.get("entryDeviceType"),
             "isDialog": data.get("isDialog"),
             "middleSn": data.get("middleSn"),
             "nlp_response": data.get("response"),
+            "centralControlInput": data.get("centralControlInput"),
+            "centralControlOutput": data.get("centralControlOutput"),
             "results": data.get("results")
         }
 
