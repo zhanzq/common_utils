@@ -37,7 +37,7 @@ class WEB:
     def download_web(self,):
         try:
             # 发起HTTP GET请求
-            response = requests.get(self.url, proxies=self.proxies)
+            response = requests.get(self.url, headers=self.headers, proxies=self.proxies)
 
             # 检查请求是否成功
             if response.status_code == 200:
@@ -103,7 +103,7 @@ class WEB:
                 attr = ""
                 if "id" in p.attrs:
                     attr = f"#{p.attrs['id']}"
-                elif "class" in p.attrs:
+                elif "class" in p.attrs and p.attrs["class"]:
                     attr = f".{p.attrs['class'][0]}"
                 lst.append(f"{p.name}{attr}")
                 p = p.find_parent()
