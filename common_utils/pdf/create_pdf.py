@@ -3,8 +3,10 @@
 # created by zhanzq
 #
 import os
+import random
 
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 from common_utils.pdf.color import COLOR
 
 from common_utils.utils import gen_add_or_sub_questions
@@ -21,6 +23,7 @@ class PDF(FPDF):
         self.output_path = pdf_path
         self.font_dir = font_dir
         self.load_fonts()
+        self.page_width = 186  # A4纸张宽度595pt, 减去左右各20pt边距
 
     def load_fonts(self):
         if not self.font_dir:
@@ -33,8 +36,8 @@ class PDF(FPDF):
                 font_name = font_file.split(".")[0]
                 font_path = os.path.join(self.font_dir, font_file)
                 try:
-                    self.add_font(font_name, '', font_path, True)
-                    self.fonts[font_name]["ttffile"] = font_path
+                    self.add_font(font_name, '', font_path)
+                    # self.fonts[font_name]["ttffile"] = font_path
                 except Exception as e:
                     print(e)
 
@@ -158,7 +161,7 @@ class PDF(FPDF):
             if text:
                 self.set_font_size(font_size)
                 self.set_xy(x=x1-2, y=y1)
-                self.cell(w=font_size, h=font_size, txt=text, border=0, ln=0, align='C')
+                self.cell(w=font_size, h=font_size, text=text, new_x=XPos.RIGHT, new_y=YPos.NEXT, border=0, align='C')
 
             # self.set_font(family="arial", style="", size=14)
             # self.text(x1-2, y2-8, text)
@@ -167,7 +170,7 @@ class PDF(FPDF):
             if pinyin:
                 self.set_font_size(16)
                 self.set_xy(x=x1, y=y1-31)
-                self.cell(w=font_size, h=font_size, txt=pinyin, border=0, ln=0, align='C')
+                self.cell(w=font_size, h=font_size, text=pinyin, border=0, new_x=XPos.RIGHT, new_y=YPos.NEXT, align='C')
         except Exception as e:
             print(e)
             pass
@@ -176,13 +179,15 @@ class PDF(FPDF):
 
 
 class MathQuestionPDF(PDF):
-    def __int__(self,
-                pdf_path,
-                max_lines_per_page=15,              # pdf页面最大行数
-                footer_info="小学数学——10以内的加法",  # 页脚信息
-                header_info="小学数学",              # 页眉信息
-                ):
-        super().__init__(pdf_path=pdf_path, unit="mm")
+    def __init__(
+            self,
+            pdf_path,
+            font_dir=None,                      # 中文字体库路径
+            max_lines_per_page=15,              # pdf页面最大行数
+            footer_info="小学数学——10以内的加法",  # 页脚信息
+            header_info="小学数学",              # 页眉信息
+            ):
+        super().__init__(pdf_path=pdf_path, font_dir=font_dir, unit="mm")
         self.footer_info = footer_info
         self.header_info = header_info
         self.max_lines_per_page = max_lines_per_page
@@ -191,12 +196,12 @@ class MathQuestionPDF(PDF):
         # Logo
         self.image('/Users/zhanzq/Downloads/math.jpg', x=10, y=8, w=33, h=25)
         # Arial bold 15
-        self.set_font('Times', size=15)
+        self.set_font('华文楷体', size=15)
         # Move to the right
         self.cell(80)
         self._set_text_color("blue")
         # Title
-        self.cell(30, 10, self.header_info, 0, 0, 'C')
+        self.cell(30, 10, self.header_info, border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
         self._set_text_color("black")
         # Line break
         self.ln(25)
@@ -213,10 +218,11 @@ class MathQuestionPDF(PDF):
         self._set_text_color("blue")
 
         # Page number
-        self.cell(0, 10, self.footer_info, 0, 0, 'C')
+        self.cell(0, 10, self.footer_info, border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
         self._set_text_color("black")
         self._set_draw_color("blue")
-        self.line(50, 20, 195, 20)
+        # self.line(50, 20, 195, 20)
+        self.line(50, 20, self.page_width, 20)
 
         return
 
@@ -233,9 +239,9 @@ class MathQuestionPDF(PDF):
         left, right, bottom = 10, 195, 265
         self.line(left, bottom, right, bottom)
         self.set_y(bottom)
-        width_column = 210//len(appendix_info)
+        width_column = self.page_width//len(appendix_info)
         for item in appendix_info:
-            self.cell(w=width_column, h=10, txt=item, ln=0)
+            self.cell(w=width_column, h=10, text=item)
         self.ln()   # 换行
         y = self.get_y()
         self.line(left, y, right, y)
@@ -253,15 +259,15 @@ class MathQuestionPDF(PDF):
         :return:
         """
 
-        column_width = 210 // column
-        self.set_font('Times', '', 18)
+        column_width = self.page_width // column
+        self.set_font('华文楷体', '', 18)
         cur_lines = 0
         for i in range(0, len(lines), column):
             try:
                 if cur_lines % max_lines_per_page == 0:
                     self.add_page()
                 for column_idx in range(column):
-                    self.cell(w=column_width, h=15, txt=lines[i + column_idx], border=0, ln=0, align='L')
+                    self.cell(w=column_width, h=15, text=lines[i + column_idx], new_x=XPos.RIGHT, new_y=YPos.TOP, border=0, align='C')
                 self.ln()
                 cur_lines += 1
             except Exception as e:
@@ -272,7 +278,19 @@ class MathQuestionPDF(PDF):
 
 
 def main():
-
+    add_lines, sub_lines, mix_lines = gen_add_or_sub_questions(min_val=1, top=99)
+    pdf = MathQuestionPDF(
+        pdf_path='/Users/zhanzq/Downloads/math.pdf',
+        font_dir='./fonts',
+        footer_info="小学数学——100以内的加减法"
+    )
+    page_num = 30
+    max_lines_per_page = 15
+    column = 2
+    for i in range(page_num):
+        out_lines = random.choices(mix_lines, k=max_lines_per_page*column)
+        pdf.add_content(out_lines, max_lines_per_page=max_lines_per_page, column=column)
+    pdf.save()
     return
 
 
