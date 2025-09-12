@@ -32,8 +32,12 @@ def gen_add_or_sub_questions(top=10, min_val=1):
             if a + b > top:
                 break
             c = a + b
-            sub_lst.append(f"{c:2d} — {a:2d} = ")
-            add_lst.append(f"{a:2d} + {b:2d} = ")
+            sub_lst.append(f"{c:2d} — {a:2d} = □")   # – En dash（短破折号）U+2013
+            sub_lst.append(f"{c:2d} — □ = {b:2d}")  # – En dash（短破折号）U+2013
+            sub_lst.append(f"□ — {a:2d} = {b:2d}")  # – En dash（短破折号）U+2013
+            add_lst.append(f"{a:2d} + {b:2d} = □")
+            add_lst.append(f"{a:2d} + □ = {c:2d}")
+            add_lst.append(f"□ + {b:2d} = {c:2d}")
 
     mix_lst.extend(sub_lst)
     mix_lst.extend(add_lst)
