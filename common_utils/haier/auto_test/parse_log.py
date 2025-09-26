@@ -46,20 +46,46 @@ class LogParser:
 
         return self._log_id_map
 
+    def get_simulation_device_lst(self):
+        req_body = self.get_request_body()
+        device_lst = req_body.get("otherParams").get("simulationDevices")
+        master_device_id = req_body.get("masterDeviceId")
+        if device_lst:
+            # 有模拟设备信息
+            device_infos = []
+            for device_info in device_lst.split("#"):
+                device_info = device_info.split("|")
+                try:
+                    info = {}
+                    info["deviceId"] = device_info[0]
+                    info["deviceName"] = device_info[1]
+                    info["deviceType"] = device_info[2]
+                    info["floor"] = device_info[3]
+                    info["room"] = device_info[4]
+                    info["online"] = device_info[5] != "false" and device_info[5] != "0"
+                    device_infos.append(info)
+                except Exception as e:
+                    print(e)
+            return master_device_id, device_infos
+        else:
+            return None, []
+
     def get_device_lst(self, by_type=True):
         """
         获取用户的设备列表信息
         :param by_type: 是否按设备类型返回设备列表，默认为True
         :return: master_device_info: 主控设备信息, device_info：设备列表分类的yaml格式, device_lst：详细的设备列表信息
         """
-        service_name = "DataCenterDubboServiceImpl:dateResult"
-        resp_obj = self.get_service_info(service_name=service_name)
-        resp = json.loads(resp_obj["data"]["response"])
-        rooms = resp["roomResponse"]
-        device_lst = rooms.get("deviceRoomInfos", [])
-        master_device_id = resp_obj.get("data").get("deviceId")
-        master_device_info = self._get_master_device_info(master_device_id=master_device_id, device_lst=device_lst)
+        master_device_id, device_lst = self.get_simulation_device_lst()
+        if not master_device_id or not device_lst:
+            service_name = "DataCenterDubboServiceImpl:dateResult"
+            resp_obj = self.get_service_info(service_name=service_name)
+            resp = json.loads(resp_obj["data"]["response"])
+            rooms = resp["roomResponse"]
+            device_lst = rooms.get("deviceRoomInfos", [])
+            master_device_id = resp_obj.get("data").get("deviceId")
 
+        master_device_info = self._get_master_device_info(master_device_id=master_device_id, device_lst=device_lst)
         device_infos = []
         for device in device_lst:
             device_info = self.parse_device_info(device)
@@ -342,6 +368,16 @@ class LogParser:
         resp = resp.get("resp", resp)
 
         return query, resp
+
+    def get_request_body(self):
+        service_name = "dialog-system:doNlpAnalysis"
+        resp_obj = self.get_service_info(service_name=service_name)
+        req = resp_obj.get("data").get("reqBody")
+        args = json.loads(req)
+
+        post_json = args.get("args0", {})
+        post_json.pop("sn", None)
+        return post_json
 
     def get_query_by_sn(self, verbose=False):
         """
@@ -943,7 +979,9 @@ class LogParser:
         semantics = resp.get("semantics", [])
         nlu_info = None
         if semantics:
-            child_semantics = semantics[0]["childSemantics"]
+            child_semantics = []
+            for it in semantics:
+                child_semantics.extend(it["childSemantics"])
             nlu_info = [self.parse_nlu_info_from_log(it) for it in child_semantics]
 
         if nlu_info:
