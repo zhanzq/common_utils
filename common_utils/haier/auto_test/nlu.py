@@ -135,20 +135,20 @@ class NLU:
             "sim": "https://aisim.haiersmarthomes.com/dialog-system/v2/dialog",
             "service": "https://aiservice.haier.net/dialog-system/v2/dialog"
         }[env]
-        payload = json.dumps(
-            {
-                "deviceType": device,
-                "userInput": query,
-                "otherParams": {
-                    "simulation": simulation,
-                    "simulationDevices": self.simulation_devices,
-                    "familyId": "test_zzq",
-                    "dotId": "test_zzq",
-                },
-                "userId": "test_zzq",
-                "masterDeviceId": "test_zzq"
-            }
-        )
+        payload = {
+            "deviceType": device,
+            "userInput": query,
+            "otherParams": {
+                "simulation": simulation,
+                "familyId": "test_zzq",
+                "dotId": "test_zzq",
+            },
+            "userId": "test_zzq",
+            "masterDeviceId": "test_zzq"
+        }
+        if not simulation:
+            payload["otherParams"]["simulationDevices"] = self.simulation_devices
+        payload = json.dumps(payload)
         headers = {
             'Content-Type': 'application/json',
             "auth": "access_nlp_12345678",

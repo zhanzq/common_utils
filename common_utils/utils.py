@@ -48,6 +48,84 @@ def gen_add_or_sub_questions(top=10, min_val=1):
     return add_lst, sub_lst, mix_lst
 
 
+def gen_multiply_or_divide_questions(top=10, min_val=1):
+    """
+    随机生成N以内的乘除法示例，如 1 x 10 = , 10 ÷ 2 =
+    :param top: 算术上限N，默认值为10
+    :param min_val: 算术下限，默认值为1
+    :return: type, tuple(List, List, List), 返回所有可能的算术示例，分别为加法，减法，加减混合
+    """
+    multiply_lst = []
+    divide_lst = []
+    mix_lst = []
+    for a in range(min_val, top + 1):
+        for b in range(min_val, top + 1):
+            c = a * b
+            divide_lst.append(f"{c:^3} ÷ {a:^3} = (   )")   # ×（乘号）\u00D7
+            divide_lst.append(f"{c:^3} ÷ (   ) = {b:^3}")  # ÷（除号）\u00F7
+            divide_lst.append(f"(   ) ÷ {a:^3} = {b:^3}")
+            multiply_lst.append(f"{a:^3} × {b:^3} = (   )")
+            multiply_lst.append(f"{a:^3} × (   ) = {c:^3}")
+            multiply_lst.append(f"(   ) × {b:^3} = {c:^3}")
+
+    mix_lst.extend(divide_lst)
+    mix_lst.extend(multiply_lst)
+    random.shuffle(multiply_lst)
+    random.shuffle(divide_lst)
+    random.shuffle(mix_lst)
+
+    return multiply_lst, divide_lst, mix_lst
+
+
+def gen_multiply5_or_divide2_questions(top=100, min_val=1):
+    """
+    随机生成N以内的乘除法示例，如 12 x 5 = , 12 ÷ 2 =
+    :param top: 算术上限N，默认值为10
+    :param min_val: 算术下限，默认值为1
+    :return: type, tuple(List, List, List), 返回所有可能的算术示例，分别为乘法，除法，乘除法混合
+    """
+    multiply_lst = []
+    divide_lst = []
+    mix_lst = []
+
+    for a in range(min_val, top + 1):
+            divide_lst.append(f"{a:^3} ÷ {2:^3} = (   )")   # ×（乘号）\u00D7
+            multiply_lst.append(f"{a:^3} × {5:^3} = (   )")
+    mix_lst.extend(divide_lst)
+    mix_lst.extend(multiply_lst)
+
+    return multiply_lst, divide_lst, mix_lst
+
+
+def gen_multiplication_exercises(a_min, a_max, b_min, b_max):
+    """
+    随机生成a乘b示例，如 12 x 5 = , 12 ÷ 2 =
+    :param a_min: 被乘数下限
+    :param a_max: 被乘数上限
+    :param b_min: 乘数下限
+    :param b_max: 乘数上限
+    :return: type, tuple(List, List, List), 返回所有可能的算术示例，分别为乘法，除法，乘除法混合
+    """
+    multiply_lst = []
+    divide_lst = []
+    mix_lst = []
+
+    for a in range(a_min, a_max+1):
+        for b in range(b_min, b_max+1):
+            res = a*b
+            divide_lst.append(f"{res:^3} ÷ {b:^3} = (   )")   # ×（乘号）\u00D7
+            divide_lst.append(f"{res:^3} ÷ (   ) = {b:^3}")  # ×（乘号）\u00D7
+            divide_lst.append(f"(   ) ÷ {a:^3} = {b:^3}")  # ×（乘号）\u00D7
+            multiply_lst.append(f"{a:^3} × {b:^3} = (   )")
+            multiply_lst.append(f"{b:^3} × {a:^3} = (   )")
+            multiply_lst.append(f"{b:^3} × (   ) = {res:^3}")
+            multiply_lst.append(f"(   ) × {b:^3} = {res:^3}")
+    mix_lst.extend(divide_lst)
+    mix_lst.extend(multiply_lst)
+
+    return multiply_lst, divide_lst, mix_lst
+
+
 class Context:
     """
     Initialize the object with a dictionary.

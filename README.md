@@ -6,6 +6,15 @@
    + 新增`edit_executor_device_supported_domains(device_code, domain_codes, env="dev")`，用于编辑玄武中“执行设备支持领域”，即指定入口设备时，所有支持的领域列表
    + 新增`get_executor_device_supported_domains(device_type=None, device_name=None, env="dev")`，用于获取玄武中“执行设备支持领域”，与“入口设备支持领域”基本相同，即指定入口设备下所有支持的领域名称，当同时指定入口设备类型和名称时，优先使用名称进行匹配
    + 新增`get_domains_related_to_executor_devices(domain, env="dev")`，用于获取玄武中“领域关联执行设备”，nlu解析出领域后，可以根据此，筛选出相关的设备
+2. 更新`common_utils.haier.auto_test.nlu`模块
+   + 更新`get_dm_service_response(self, query, env="service", device="X20", simulation=True)`，当simulation参数为True时，使用dm项目中的模拟设备列表，不再提供新的设备列表
+3. 更新`common_utils.haier.auto_test.parse_log`模块
+   + 新增`get_scene_lst(self, verbose=False)`，用于获取日志中涉及的场景列表
+   + 优化`def get_semantics(resp_obj, remove_blocks=None, remove_extract_domain=True, remove_internal_command=False)`，支持移除指定的block类型
+4. 更新`common_utils.utils`模块
+   + 新增`gen_multiply_or_divide_questions(top=10, min_val=1)`，用于生成乘法或除法的数学题目
+   + 新增`gen_multiply5_or_divide2_questions(top=100, min_val=1)`，用于生成5的乘法或2的除法的数学题目
+   + 新增`gen_multiplication_exercises(a_min, a_max, b_min, b_max)`，用于生成指定范围内的乘法练习题目
 
 
 ## version 1.4.5

@@ -70,10 +70,27 @@ class LogParser:
         else:
             return None, []
 
-    def get_device_lst(self, by_type=True):
+    def get_scene_lst(self, verbose=False):
+        service_name = "IftttExecService:querySceneInfo"
+        scene_lst = []
+        try:
+            resp = self.get_service_info(service_name=service_name)
+            scene_resp = json.loads(resp.get("data").get("response"))
+            scene_lst = [it.get("sceneName") for it in scene_resp.get("sceneDtos")]
+        except Exception as e:
+            print(e)
+
+        if verbose:
+            print("场景列表信息：")
+            print(", ".join(scene_lst))
+            print("\n\n")
+        return scene_lst
+
+    def get_device_lst(self, by_type=True, verbose=False):
         """
         获取用户的设备列表信息
         :param by_type: 是否按设备类型返回设备列表，默认为True
+        :param verbose: 是否打印详细信息, 默认不打印
         :return: master_device_info: 主控设备信息, device_info：设备列表分类的yaml格式, device_lst：详细的设备列表信息
         """
         master_device_id, device_lst = self.get_simulation_device_lst()
@@ -81,7 +98,7 @@ class LogParser:
             service_name = "DataCenterDubboServiceImpl:dateResult"
             resp_obj = self.get_service_info(service_name=service_name)
             resp = json.loads(resp_obj["data"]["response"])
-            rooms = resp["roomResponse"]
+            rooms = resp.get("roomResponse", {})
             device_lst = rooms.get("deviceRoomInfos", [])
             master_device_id = resp_obj.get("data").get("deviceId")
 
@@ -95,13 +112,15 @@ class LogParser:
 
         device_mp = self._convert_to_device_map_by_type(device_infos) if by_type \
             else self._convert_to_device_map_by_floor(device_infos)
-        print("主控信息：")
-        print(master_device_info)
 
-        print("\n\n设备列表信息：")
-        device_info = self._print_device_info(device_mp, by_yaml=True)
+        if verbose:
+            print("主控信息：")
+            print(master_device_info)
 
-        return master_device_info, device_info, device_lst
+            print("\n\n设备列表信息：")
+            self._print_device_info(device_mp, by_yaml=True)
+
+        return master_device_info, device_infos, device_lst
 
     @staticmethod
     def process_integratedstove(device_info):
@@ -496,31 +515,22 @@ class LogParser:
 
     @staticmethod
     def get_semantics(resp_obj,
-                      remove_block_template=True,
-                      remove_block_nlu=True,
-                      remove_block_corpus=True,
-                      remove_block_ccg=True,
-                      remove_block_kg=True,
-                      remove_block_ice_nlu=True,
-                      remove_block_dp=True,
-                      remove_block_guochuang=True,
+                      remove_blocks=None,
                       remove_extract_domain=True,
                       remove_internal_command=False):
         """
         获取服务（如nlu, dm, template等）返回的结果中的semantics信息，并进行过滤
-        :param remove_block_template: 过滤不必要的BlockTemplate, 默认为True
-        :param remove_block_nlu: 过滤不必要的BlockNLU, 默认为True
-        :param remove_block_corpus: 过滤不必要的BlockCorpus, 默认为True
-        :param remove_block_ccg: 过滤不必要的BlockCCG, 默认为True
-        :param remove_block_kg: 过滤不必要的BlockKg, 默认为True
-        :param remove_block_ice_nlu: 过滤不必要的BlockIceNlu, 默认为True
-        :param remove_block_dp: 过滤不必要的BlockDp, 默认为True
-        :param remove_block_guochuang: 过滤不必要的BlockGuoChuang, 默认为True
+        :param remove_blocks: 额外需要过滤的Block*领域列表, 如["Music","Weather"]
         :param remove_extract_domain: 过滤不必要的Extract*, 默认为True
         :param remove_internal_command: 不能过滤InternalCommand, 可能跟温度/亮度专题相关
         :param resp_obj: 服务返回的json格式数据
         :return:
         """
+        if remove_blocks is None:
+            print(f"error: remove_blocks is None")
+            return None
+            # remove_blocks = ["BlockTemplate", "BlockNLU", "BlockCorpus", "BlockCCG", "BlockKg", "BlockIceNlu",
+            #                  "BlockDp", "BlockGuoChuang"]
         if not resp_obj or "semantics" not in resp_obj or not resp_obj["semantics"]:
             return []
 
@@ -530,22 +540,8 @@ class LogParser:
                 continue
 
             child_semantics = item["childSemantics"]
-            if remove_block_template:
-                child_semantics = LogParser.rm_block_template(child_semantics)
-            if remove_block_nlu:
-                child_semantics = LogParser.rm_block_nlu(child_semantics)
-            if remove_block_corpus:
-                child_semantics = LogParser.rm_block_corpus(child_semantics)
-            if remove_block_ccg:
-                child_semantics = LogParser.rm_block_ccg(child_semantics)
-            if remove_block_kg:
-                child_semantics = LogParser.rm_block_kg(child_semantics)
-            if remove_block_ice_nlu:
-                child_semantics = LogParser.rm_block_ice_nlu(child_semantics)
-            if remove_block_dp:
-                child_semantics = LogParser.rm_block_dp(child_semantics)
-            if remove_block_guochuang:
-                child_semantics = LogParser.rm_block_guochuang(child_semantics)
+            for block_domain in remove_blocks:
+                child_semantics = LogParser.remove_blocks(block_domain, child_semantics)
             if remove_extract_domain:
                 child_semantics = LogParser.rm_extract_domain(child_semantics)
             if remove_internal_command:
@@ -556,11 +552,33 @@ class LogParser:
         return semantics
 
     @staticmethod
-    def get_semantics_info(resp_obj, remove_block_template=True, remove_block_nlu=True):
-        semantics = LogParser.get_semantics(resp_obj,
-                                            remove_block_template=remove_block_template,
-                                            remove_block_nlu=remove_block_nlu,
-                                            )
+    def remove_blocks(block_domain, child_semantics):
+        """
+        生成过滤Block*领域的函数
+        :param block_domain: 需要过滤的Block*领域
+        :param child_semantics: 待过滤的语义信息
+        :return:
+        """
+        if block_domain == "BlockTemplate":
+            return LogParser.rm_block_template(child_semantics)
+        else:
+            return LogParser.rm_block_by_domain(semantics=child_semantics, block_domain=block_domain)
+
+
+
+    @staticmethod
+    def get_semantics_info(resp_obj, remove_blocks=None):
+        """
+        获取服务（如nlu, dm, template等）返回的结果中的semantics信息，并进行解析
+        :param resp_obj: 服务返回的json格式数据
+        :param remove_blocks: 额外需要过滤的Block*领域列表, 如["Music","Weather"]
+        :return:
+        """
+        if remove_blocks is None:
+            remove_blocks = [
+                "BlockTemplate", "BlockNLU", "BlockCorpus", "BlockCCG", "BlockKg", "BlockIceNlu", "BlockDp",
+                "BlockGuoChuang", "BlockCentralModel", "BlockChat"]
+        semantics = LogParser.get_semantics(resp_obj, remove_blocks=remove_blocks)
         channel = resp_obj["retChannel"]
         if channel == "nluTemplate":
             semantics_info = [LogParser._parse_tpl_match_semantic(it) for it in semantics]
@@ -641,10 +659,11 @@ class LogParser:
         return filtered
 
     @staticmethod
-    def rm_block_nlu(semantics):
+    def rm_block_by_domain(semantics, block_domain):
         """
-        过滤nlu_info中的BlockNLU类语义信息
+        过滤nlu_info中的Block类语义信息
         :param semantics: 待过滤的语义信息
+        :param block_domain: 待过滤的领域
         :return:
         """
         if not semantics:
@@ -653,115 +672,7 @@ class LogParser:
 
         for semantic in semantics:
             domain = semantic.get("domain", "")
-            if domain != "BlockNLU":
-                filtered.append(semantic)
-
-        return filtered
-
-    @staticmethod
-    def rm_block_corpus(semantics):
-        """
-        过滤nlu_info中的BlockCorpus类语义信息
-        :param semantics: 待过滤的语义信息
-        :return:
-        """
-        if not semantics:
-            return semantics
-        filtered = []
-
-        for semantic in semantics:
-            domain = semantic.get("domain", "")
-            if domain != "BlockCorpus":
-                filtered.append(semantic)
-
-        return filtered
-
-    @staticmethod
-    def rm_block_ccg(semantics):
-        """
-        过滤nlu_info中的BlockCCG类语义信息
-        :param semantics: 待过滤的语义信息
-        :return:
-        """
-        if not semantics:
-            return semantics
-        filtered = []
-
-        for semantic in semantics:
-            domain = semantic.get("domain", "")
-            if domain != "BlockCCG":
-                filtered.append(semantic)
-
-        return filtered
-
-    @staticmethod
-    def rm_block_kg(semantics):
-        """
-        过滤nlu_info中的BlockKg类语义信息
-        :param semantics: 待过滤的语义信息
-        :return:
-        """
-        if not semantics:
-            return semantics
-        filtered = []
-
-        for semantic in semantics:
-            domain = semantic.get("domain", "")
-            if domain != "BlockKg":
-                filtered.append(semantic)
-
-        return filtered
-
-    @staticmethod
-    def rm_block_ice_nlu(semantics):
-        """
-        过滤nlu_info中的BlockIceNlu类语义信息
-        :param semantics: 待过滤的语义信息
-        :return:
-        """
-        if not semantics:
-            return semantics
-        filtered = []
-
-        for semantic in semantics:
-            domain = semantic.get("domain", "")
-            if domain != "BlockIceNlu":
-                filtered.append(semantic)
-
-        return filtered
-
-    @staticmethod
-    def rm_block_dp(semantics):
-        """
-        过滤nlu_info中的BlockDp类语义信息
-        :param semantics: 待过滤的语义信息
-        :return:
-        """
-        if not semantics:
-            return semantics
-        filtered = []
-
-        for semantic in semantics:
-            domain = semantic.get("domain", "")
-            if domain != "BlockDp":
-                filtered.append(semantic)
-
-        return filtered
-
-    @staticmethod
-    def rm_block_guochuang(semantics):
-        """
-        过滤nlu_info中的BlockGuoChuang类语义信息
-        :param semantics: 待过滤的语义信息
-        :return:
-        """
-        if not semantics:
-            return semantics
-        filtered = []
-
-        for semantic in semantics:
-            domain = semantic.get("domain", "")
-            if domain != "BlockGuoChuang":
+            if domain != block_domain:
                 filtered.append(semantic)
 
         return filtered
