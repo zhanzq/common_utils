@@ -754,7 +754,7 @@ class LogParser:
             semantic_domain = semantic.get("domain", "")
             block_domain = semantic.get("intent", "")
             # 完全匹配检查
-            if semantic_domain == "BlockTemplate" and block_domain.startswith(f"block{domain}"):
+            if semantic_domain == "BlockTemplate" and block_domain.startswith(f"Block{domain}"):
                 filtered.append(semantic)
 
         return filtered
@@ -951,11 +951,11 @@ class LogParser:
 
 
 def main():
-    parser = LogParser(env="service")
-    sn = "20241213173113652000743991"
+    parser = LogParser(env="sim")
+    sn = "t20260115093136661056298496"
     parser.update_config(sn=sn)
 
-    domain_lst = ["Dev.oven", ""]
+    domain_lst = ["Dev.oven", "CustomerService"]
 
     parser.get_device_lst(by_type=True)
 
