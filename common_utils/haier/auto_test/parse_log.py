@@ -382,11 +382,12 @@ class LogParser:
         param = req.get("args0", req)
         query = f'{self.get_origin_query(param)} -> {self.get_rewrite_query(param)}'
         # context = param.get("contextQuery")
+        action_time = data.get("actionTime")
 
         resp = json.loads(data["response"]) if "response" in data else None
         resp = resp.get("resp", resp)
 
-        return query, resp
+        return query, resp, action_time
 
     def get_request_body(self):
         service_name = "dialog-system:doNlpAnalysis"
@@ -407,7 +408,7 @@ class LogParser:
         if service_name not in self.get_log_id_map():
             return "ERROR doNlpAnalysis"
         service_info = self.get_service_info(service_name)
-        query, _ = self._parse_service_info(service_info)
+        query, _, _ = self._parse_service_info(service_info)
         if verbose:
             print_info = {
                 "env": self._env,
@@ -429,7 +430,7 @@ class LogParser:
         if service_name not in self.get_log_id_map():
             return "ERROR dialog-system:NluReceiver"
         service_info = self.get_service_info(service_name)
-        query, resp = self._parse_service_info(service_info)
+        query, resp, action_time = self._parse_service_info(service_info)
         if debug:
             print(format_string(f"nlu receiver info: env={self._env}, query={query}"))
 
@@ -718,8 +719,9 @@ class LogParser:
         if service_name not in self.get_log_id_map():
             return "ERROR NluTemplate:nlu"
         service_info = self.get_service_info(service_name)
-        query, resp = self._parse_service_info(service_info)
+        query, resp, action_time = self._parse_service_info(service_info)
 
+        timeout = 500
         print(format_string(f"template match result: env={self._env}, query={query}"))
         semantics = resp.get("semantics", [])
         simple_semantics = None
@@ -734,6 +736,8 @@ class LogParser:
             print_info = json.dumps(simple_semantics, indent=4, ensure_ascii=False)
             if verbose:
                 print(print_info)
+        if action_time > timeout:
+            simple_semantics = {"error": f"template match timeout: action_time={action_time}ms"}
 
         return simple_semantics
 
@@ -747,10 +751,10 @@ class LogParser:
         """
         filtered = []
         for semantic in semantics:
-            category = semantic.get("category", "")
-            cur_domain = semantic.get("intent", "").lower()
+            semantic_domain = semantic.get("domain", "")
+            block_domain = semantic.get("intent", "")
             # 完全匹配检查
-            if category == "BlockTemplate" and cur_domain == f"block{domain.lower()}":
+            if semantic_domain == "BlockTemplate" and block_domain.startswith(f"block{domain}"):
                 filtered.append(semantic)
 
         return filtered
@@ -765,7 +769,7 @@ class LogParser:
         if service_name not in self.get_log_id_map():
             return "ERROR NluTemplate:nlu"
         service_info = self.get_service_info(service_name)
-        query, resp = self._parse_service_info(service_info)
+        query, resp, action_time = self._parse_service_info(service_info)
 
         print(format_string(f"block check: domains: {domain_lst}, env={self._env}, query={query}"))
         semantics = resp.get("semantics", [])
@@ -825,7 +829,7 @@ class LogParser:
         if service_name not in self.get_log_id_map():
             return "ERROR LogTrace"
         service_info = self.get_service_info(service_name)
-        query, resp = self._parse_service_info(service_info)
+        query, resp, action_time = self._parse_service_info(service_info)
         print(format_string(f"log trace info: env={self._env}, query={query}"))
 
         log_trace_info = json.dumps(resp, ensure_ascii=False, indent=4)
@@ -883,7 +887,7 @@ class LogParser:
         if service_name not in self.get_log_id_map():
             return "ERROR doNlu"
         service_info = self.get_service_info(service_name)
-        query, resp = self._parse_service_info(service_info)
+        query, resp, action_time = self._parse_service_info(service_info)
         if debug:
             print(format_string(f"do_nlu info: env={self._env}, query={query}"))
 
@@ -919,7 +923,7 @@ class LogParser:
         request_json = service_info.get("data").get("reqBody")
         args = json.loads(request_json)
         request_data = args.get("args0", {})
-        query, resp = self._parse_service_info(service_info)
+        query, resp, action_time = self._parse_service_info(service_info)
         if debug:
             print(format_string(f"do_nlp_analysis info: env={self._env}, query={query}"))
 
