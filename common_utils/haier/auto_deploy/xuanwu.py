@@ -56,7 +56,7 @@ class XuanWu:
         payload = f"deviceCode={device_code}&domainArray={domain_codes}"
         method = "POST"
 
-        response = requests.request(method=method, url=url, headers=headers, data=payload)
+        response = requests.request(method=method, url=url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -91,7 +91,7 @@ class XuanWu:
         method = "GET"
         payload = ""
         # payload = f"params%5BdeviceType%5D={entry_type}&pageSize=100&pageNum=1&orderByColumn=&isAsc=asc"
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         res = []
@@ -138,7 +138,7 @@ class XuanWu:
         method = "POST"
         payload = ""
         # payload = f"params%5BdeviceType%5D={entry_type}&pageSize=10&pageNum=1&orderByColumn=&isAsc=asc"
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
         rows = obj_resp.get("rows")
 
@@ -197,7 +197,7 @@ class XuanWu:
         }
         method = "POST"
         payload = ""
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
         rows = obj_resp.get("rows")
         for row in rows:
@@ -272,7 +272,7 @@ class XuanWu:
         data = self._remove_slot_info(intent_info=intent_info, slots_to_remove=slots_to_remove)
         payload = json.dumps(data)
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -393,7 +393,7 @@ class XuanWu:
             "selfCtrlFlag": "N"
         }
 
-        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data))
+        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data), timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -418,7 +418,7 @@ class XuanWu:
         method = "POST"
         data = {}
 
-        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data))
+        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data), timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -451,7 +451,7 @@ class XuanWu:
             "extend": "{}"
         }
 
-        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data))
+        response = requests.request(url=url, method=method, headers=headers, data=json.dumps(data), timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -506,7 +506,7 @@ class XuanWu:
         method = "POST"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
         data_file = obj_resp.get("data")
         if data_file:
@@ -526,7 +526,7 @@ class XuanWu:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         html = response.text
 
         return html
@@ -557,7 +557,7 @@ class XuanWu:
 
         payload = f"id={release_id}&version={old_version}&newVersion={new_version}"
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
 
         json_obj = json.loads(response.text)
         msg = json_obj.get("msg")
@@ -583,7 +583,7 @@ class XuanWu:
         method = "POST"
         payload = f"version={version}"
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         json_obj = json.loads(response.content)
         print(json_obj)
 
@@ -610,7 +610,7 @@ class XuanWu:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         output_path = f"/Users/zhanzq/Downloads/{file_name}"
         with open(output_path, "wb") as writer:
             print(f"content size: {len(response.content)}")
@@ -906,7 +906,7 @@ class XuanWu:
             method = "POST"
             payload = f"version={version}&remark={comment}"
 
-            response = requests.request(method, url, headers=headers, data=payload)
+            response = requests.request(method, url, headers=headers, data=payload, timeout=5)
 
             obj_resp = json.loads(response.text)
             if obj_resp.get("code") == 500:
@@ -937,7 +937,7 @@ class XuanWu:
         }
         payload = json.dumps(post_data)
         method = "POST"
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -956,7 +956,7 @@ class XuanWu:
         payload = json.dumps(post_data)
         method = "POST"
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         return obj_resp
@@ -1047,7 +1047,7 @@ class XuanWu:
         method = "POST"
         payload = f"ids={domains}&env=k8ssim"
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
 
         obj_resp = json.loads(response.text)
 
@@ -1072,7 +1072,7 @@ class XuanWu:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
 
         output_path = f"/Users/zhanzq/Downloads/{data_file}"
         with open(output_path, "wb") as writer:
@@ -1092,7 +1092,7 @@ class XuanWu:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
         intent_info = obj_resp["data"]
         intent_info = self._preprocess_detail_intent_info(intent_info)
@@ -1113,7 +1113,7 @@ class XuanWu:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         intent_info = json.loads(response.text)
         intent_to_id = parse_xuanwu_intent_info(intent_info)
 
@@ -1137,7 +1137,7 @@ class XuanWu:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
 
         version = re.findall(pattern="required value=\"([\d\.]+)\"", string=response.text)[0]
 

@@ -322,7 +322,7 @@ class LogParser:
 
         for _ in range(3):
             try:
-                response = requests.request("GET", url, headers=headers, data=payload)
+                response = requests.request("GET", url, headers=headers, data=payload, timeout=5)
                 log_id_ret = json.loads(response.text)
                 log_id_map = self._parse_log_id(log_id_ret)
                 if log_id_map and is_last_req:
@@ -484,7 +484,7 @@ class LogParser:
             "user-agent": USER_AGENT
         }
 
-        response = requests.request("GET", url, headers=headers, data=payload)
+        response = requests.request("GET", url, headers=headers, data=payload, timeout=5)
 
         service_info = json.loads(response.text)
         if not service_info.get("data") or  not service_info["data"].get("reqBody"):
@@ -865,7 +865,7 @@ class LogParser:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         data = obj_resp.get("data")
