@@ -121,13 +121,14 @@ class NLU:
 
         return nlu_info
 
-    def get_dm_service_response(self, query, env="service", device="X20", simulation=True):
+    def get_dm_service_response(self, query, env="service", device="X20", simulation=True, llm=True):
         """
         在特定环境中获取dm的执行结果
-        :param simulation: 是否模拟设备信息，默认为True，表示具有各种设备
         :param query: 输入语句
         :param env: 测试环境，test:验收, sim:仿真, service:生产, 默认为生产环境
         :param device: 主控设备，即语音入口
+        :param simulation: 是否模拟设备信息，默认为True，表示具有各种设备
+        :param llm: 是否使用llm模型，默认为True
         :return: dict, dm service处理结果
         """
         url = {
@@ -148,6 +149,9 @@ class NLU:
         }
         if not simulation:
             payload["otherParams"]["simulationDevices"] = self.simulation_devices
+
+        if llm:
+            payload["otherParams"]["llm2"] = True
         payload = json.dumps(payload)
         headers = {
             'Content-Type': 'application/json',
