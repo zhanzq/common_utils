@@ -24,6 +24,7 @@ class PDF(FPDF):
         self.font_dir = font_dir
         self.load_fonts()
         self.page_width = 186  # A4纸张宽度595pt, 减去左右各20pt边距
+        self.page_height = 270  # A4纸张高度842pt, 减去上下各20pt边距
 
     def load_fonts(self):
         if not self.font_dir:
@@ -218,7 +219,7 @@ class MathQuestionPDF(PDF):
         self._set_text_color("blue")
 
         # Page number
-        self.cell(0, 10, self.footer_info, border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
+        self.cell(0, 10, self.footer_info + f"(第{self.page_no():2d}页)", border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
         self._set_text_color("black")
         self._set_draw_color("blue")
         # self.line(50, 20, 195, 20)
@@ -250,7 +251,83 @@ class MathQuestionPDF(PDF):
 
         return
 
-    def add_content(self, lines, max_lines_per_page=15, column=3):
+    def draw_column_separators(self, column, top_margin=40, bottom_margin=10):
+        column_width = self.page_width // column
+        y1 = top_margin
+        y2 = self.page_height - bottom_margin
+
+        for i in range(1, column):
+            x = i * column_width + 10  # 左侧边距10pt
+            self._set_draw_color("blue")
+            self.line(x, y1, x, y2)
+
+    def add_content(self, lines, max_lines_per_page=15, column=3, column_first=True, with_separators=False):
+        """
+        写入正文内容到pdf文档
+        :param lines:
+        :param max_lines_per_page:
+        :param column:
+        :param column_first:
+        :param with_separators: 是否有使用分隔线，默认无分隔线
+        :return:
+        """
+        if column_first:
+            self._add_content_column_first(lines, max_lines_per_page=max_lines_per_page, column=column, with_separators=with_separators)
+        else:
+            self._add_content_row_first(lines, max_lines_per_page=max_lines_per_page, column=column, with_separators=with_separators)
+        return
+
+    def _add_content_column_first(self, lines, max_lines_per_page=15, column=3, with_separators=False):
+        """
+        按“先列后行”方式写入多列正文到 PDF
+        """
+
+        column_width = self.page_width // column
+        self.set_font('华文楷体', '', 18)
+
+        page_capacity = max_lines_per_page * column
+
+        for p in range(0, len(lines), page_capacity):
+            self.add_page()
+            if with_separators:
+                self.draw_column_separators(column)
+            page_lines = lines[p:p + page_capacity]
+
+            for row in range(max_lines_per_page):
+                for col in range(column):
+                    idx = col * max_lines_per_page + row
+                    if idx < len(page_lines):
+                        self.cell(
+                            w=column_width,
+                            h=15,
+                            text=page_lines[idx],
+                            new_x=XPos.RIGHT,
+                            new_y=YPos.TOP,
+                            border=0,
+                            align='C'
+                        )
+                    else:
+                        # 占位，保持列对齐
+                        self.cell(
+                            w=column_width,
+                            h=15,
+                            text='',
+                            new_x=XPos.RIGHT,
+                            new_y=YPos.TOP,
+                            border=0
+                        )
+
+                self.ln()
+
+                if max_lines_per_page == 5:
+                    self.ln()
+                    self.ln()
+                elif max_lines_per_page == 4:
+                    self.ln()
+                    self.ln()
+                    self.ln()
+
+    def _add_content_row_first(self, lines, max_lines_per_page=15, column=3, with_separators=False):
         """
         写入正文内容到pdf文档
         :param lines: 待写入的内容
@@ -266,9 +343,18 @@ class MathQuestionPDF(PDF):
             try:
                 if cur_lines % max_lines_per_page == 0:
                     self.add_page()
+                    if with_separators:
+                        self.draw_column_separators(column)
                 for column_idx in range(column):
                     self.cell(w=column_width, h=15, text=lines[i + column_idx], new_x=XPos.RIGHT, new_y=YPos.TOP, border=0, align='C')
                 self.ln()
+                if max_lines_per_page == 5:
+                    self.ln()
+                    self.ln()
+                elif max_lines_per_page == 4:
+                    self.ln()
+                    self.ln()
+                    self.ln()
                 cur_lines += 1
             except Exception as e:
                 print(e)
@@ -289,6 +375,7 @@ def main():
     column = 2
     for i in range(page_num):
         out_lines = random.choices(mix_lines, k=max_lines_per_page*column)
+        out_lines, results = zip(*out_lines)
         pdf.add_content(out_lines, max_lines_per_page=max_lines_per_page, column=column)
     pdf.save()
     return
