@@ -32,12 +32,12 @@ def gen_add_or_sub_questions(top=10, min_val=1):
             if a + b > top:
                 break
             c = a + b
-            sub_lst.append(f"{c:2d} — {a:2d} = □")   # – En dash（短破折号）U+2013
-            sub_lst.append(f"{c:2d} — □ = {b:2d}")  # – En dash（短破折号）U+2013
-            sub_lst.append(f"□ — {a:2d} = {b:2d}")  # – En dash（短破折号）U+2013
-            add_lst.append(f"{a:2d} + {b:2d} = □")
-            add_lst.append(f"{a:2d} + □ = {c:2d}")
-            add_lst.append(f"□ + {b:2d} = {c:2d}")
+            sub_lst.append((f"{c:^3} - {a:^3} = (   )", b))   # – En dash（短破折号）U+2013
+            sub_lst.append((f"{c:^3} - (   ) = {b:^3}", a))  # – En dash（短破折号）U+2013
+            sub_lst.append((f"(   ) - {a:^3} = {b:^3}", c))  # – En dash（短破折号）U+2013
+            add_lst.append((f"{a:^3} + {b:^3} = (   )", c))
+            add_lst.append((f"{a:^3} + (   ) = {c:^3}", b))
+            add_lst.append((f"(   ) + {b:^3} = {c:^3}", a))
 
     mix_lst.extend(sub_lst)
     mix_lst.extend(add_lst)
@@ -61,12 +61,12 @@ def gen_multiply_or_divide_questions(top=10, min_val=1):
     for a in range(min_val, top + 1):
         for b in range(min_val, top + 1):
             c = a * b
-            divide_lst.append(f"{c:^3} ÷ {a:^3} = (   )")   # ×（乘号）\u00D7
-            divide_lst.append(f"{c:^3} ÷ (   ) = {b:^3}")  # ÷（除号）\u00F7
-            divide_lst.append(f"(   ) ÷ {a:^3} = {b:^3}")
-            multiply_lst.append(f"{a:^3} × {b:^3} = (   )")
-            multiply_lst.append(f"{a:^3} × (   ) = {c:^3}")
-            multiply_lst.append(f"(   ) × {b:^3} = {c:^3}")
+            divide_lst.append((f"{c:^3} ÷ {a:^3} = (   )", b))   # ×（乘号）\u00D7
+            divide_lst.append((f"{c:^3} ÷ (   ) = {b:^3}", a))  # ÷（除号）\u00F7
+            divide_lst.append((f"(   ) ÷ {a:^3} = {b:^3}", c))
+            multiply_lst.append((f"{a:^3} × {b:^3} = (   )", c))
+            multiply_lst.append((f"{a:^3} × (   ) = {c:^3}", b))
+            multiply_lst.append((f"(   ) × {b:^3} = {c:^3}", a))
 
     mix_lst.extend(divide_lst)
     mix_lst.extend(multiply_lst)
@@ -89,8 +89,8 @@ def gen_multiply5_or_divide2_questions(top=100, min_val=1):
     mix_lst = []
 
     for a in range(min_val, top + 1):
-            divide_lst.append(f"{a:^3} ÷ {2:^3} = (   )")   # ×（乘号）\u00D7
-            multiply_lst.append(f"{a:^3} × {5:^3} = (   )")
+            divide_lst.append((f"{a:^3} ÷ {2:^3} = (   )", a//2))   # ×（乘号）\u00D7
+            multiply_lst.append((f"{a:^3} × {5:^3} = (   )", a*5))
     mix_lst.extend(divide_lst)
     mix_lst.extend(multiply_lst)
 
@@ -113,13 +113,13 @@ def gen_multiplication_exercises(a_min, a_max, b_min, b_max):
     for a in range(a_min, a_max+1):
         for b in range(b_min, b_max+1):
             res = a*b
-            divide_lst.append(f"{res:^3} ÷ {b:^3} = (   )")   # ×（乘号）\u00D7
-            divide_lst.append(f"{res:^3} ÷ (   ) = {b:^3}")  # ×（乘号）\u00D7
-            divide_lst.append(f"(   ) ÷ {a:^3} = {b:^3}")  # ×（乘号）\u00D7
-            multiply_lst.append(f"{a:^3} × {b:^3} = (   )")
-            multiply_lst.append(f"{b:^3} × {a:^3} = (   )")
-            multiply_lst.append(f"{b:^3} × (   ) = {res:^3}")
-            multiply_lst.append(f"(   ) × {b:^3} = {res:^3}")
+            divide_lst.append((f"{res:^3} ÷ {b:^3} = (   )", a))   # ×（乘号）\u00D7
+            divide_lst.append((f"{res:^3} ÷ (   ) = {b:^3}", a))  # ×（乘号）\u00D7
+            divide_lst.append((f"(   ) ÷ {a:^3} = {b:^3}", res))  # ×（乘号）\u00D7
+            multiply_lst.append((f"{a:^3} × {b:^3} = (   )", res))
+            multiply_lst.append((f"{b:^3} × {a:^3} = (   )", res))
+            multiply_lst.append((f"{b:^3} × (   ) = {res:^3}", a))
+            multiply_lst.append((f"(   ) × {b:^3} = {res:^3}", a))
     mix_lst.extend(divide_lst)
     mix_lst.extend(multiply_lst)
 
