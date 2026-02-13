@@ -26,28 +26,22 @@ class StockParser:
         return stock_name_to_code
 
     def get_stock_info(self, stock_code_or_name):
-        stock_code = self.stock_name_to_code.get(stock_code_or_name, stock_code_or_name)
-        if len(stock_code) == 6:
-            stock_code = "sh" + stock_code_or_name  # 默认为上证
-        tm = time.strftime("%H:%M:%S", time.localtime())
-        end_tm = "15:00:00"
-        if stock_code.startswith("sz") or stock_code.startswith(""):
-            end_tm = "16:10:00"
-        if tm >= end_tm:
-            print("error: stock market is closed today!")
-            return None
+        stock_code_list = []
+        for code_or_name in  stock_code_or_name.split(","):
+            stock_code = self.stock_name_to_code.get(code_or_name, code_or_name)
+            if len(stock_code) == 6:
+                stock_code = "sh" + stock_code  # 默认为上证
+            stock_code_list.append(stock_code)
 
-        url = f"https://hq.sinajs.cn/list={stock_code}"
-
-        payload = ""
+        url = f"https://hq.sinajs.cn/list={','.join(stock_code_list)}"
         headers = {
             'Referer': 'https://finance.sina.com.cn',
             'Content-Type': 'application/json'
         }
 
-        response = requests.request("GET", url, headers=headers, data=payload)
+        response = requests.get(url, headers=headers)
 
-        return response.text
+        return response.text.strip()
 
     @staticmethod
     def parse_a_stock_info(stock_info):
