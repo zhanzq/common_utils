@@ -1,4 +1,23 @@
 # 常用工具包
+## version 1.4.7
+### updates
+1. 设置requests.request请求的timeout=5
+2. 新增dm服务请求的llm2开关
+3. 更新`common_utils.pdf.create_pdf`模块
+   + 增加多列数据的分隔线功能
+   + 支持列竖式排版
+   + 支持自动页码
+4. 更新`common_utils.utils`模块
+   + 支持带答案的数学练习题生成
+5. 更新`common_utils.stock.parser`模块
+   + 支持多只股票同时查询
+6. 重构`common_utils.convert.request`模块
+   + 使用shlex模块重构了curl数据解析 
+   + curl测试数据可以直接从文件载入，方便测试
+7. 更新`common_utils.pdf.create_pdf`模块
+   + 更新了算术题生成的格式，支持对应答案生成
+
+
 ## version 1.4.6
 ### updates
 1. 更新`common_utils.haier.auto_deploy.xuanwu`模块
