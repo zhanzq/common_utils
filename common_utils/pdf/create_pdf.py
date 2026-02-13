@@ -192,6 +192,8 @@ class MathQuestionPDF(PDF):
         self.footer_info = footer_info
         self.header_info = header_info
         self.max_lines_per_page = max_lines_per_page
+        self.is_answer = False
+        self.page_footer_type = {}
 
     def header(self):
         # Logo
@@ -211,7 +213,13 @@ class MathQuestionPDF(PDF):
 
     # Page footer
     def footer(self):
-        self.add_appendix_info(appendix_info=("姓名：", "日期：", "得分："))
+        page_no = self.page_no()
+        footer_type = self.page_footer_type.get(page_no)
+        if footer_type == "question":
+            self.add_appendix_info(appendix_info=("姓名：", "日期：", "得分："))
+        elif footer_type == "answer":
+            self.footer_info = "答案"
+
         # Position at 1.5 cm from bottom
         self.set_y(-15)
         # Arial italic 8
@@ -219,7 +227,7 @@ class MathQuestionPDF(PDF):
         self._set_text_color("blue")
 
         # Page number
-        self.cell(0, 10, self.footer_info + f"(第{self.page_no():2d}页)", border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
+        self.cell(0, 10, self.footer_info + f"(第 {self.page_no():2d} 页)", border=0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
         self._set_text_color("black")
         self._set_draw_color("blue")
         # self.line(50, 20, 195, 20)
@@ -261,7 +269,7 @@ class MathQuestionPDF(PDF):
             self._set_draw_color("blue")
             self.line(x, y1, x, y2)
 
-    def add_content(self, lines, max_lines_per_page=15, column=3, column_first=True, with_separators=False):
+    def add_content(self, lines, max_lines_per_page=15, column=3, column_first=True, with_separators=False, is_answer=False):
         """
         写入正文内容到pdf文档
         :param lines:
@@ -269,8 +277,10 @@ class MathQuestionPDF(PDF):
         :param column:
         :param column_first:
         :param with_separators: 是否有使用分隔线，默认无分隔线
+        :param is_answer: 是否为答案页
         :return:
         """
+        self.is_answer = is_answer
         if column_first:
             self._add_content_column_first(lines, max_lines_per_page=max_lines_per_page, column=column, with_separators=with_separators)
         else:
@@ -279,7 +289,13 @@ class MathQuestionPDF(PDF):
 
     def _add_content_column_first(self, lines, max_lines_per_page=15, column=3, with_separators=False):
         """
-        按“先列后行”方式写入多列正文到 PDF
+        按“先列后行”方式写入多列正文到 PDF文档
+        :param lines: 待写入的内容
+        :param max_lines_per_page: 每页最多写入的行数，最大为15行，默认为15行
+        :param column: 每页写入的列数，默认为3列
+        :param with_separators: 是否有使用分隔线，默认无分隔线
+        :param is_answer: 是否为答案页
+        :return:
         """
 
         column_width = self.page_width // column
@@ -289,6 +305,7 @@ class MathQuestionPDF(PDF):
 
         for p in range(0, len(lines), page_capacity):
             self.add_page()
+            self.page_footer_type[self.page_no()] = "question" if not self.is_answer else "answer"
             if with_separators:
                 self.draw_column_separators(column)
             page_lines = lines[p:p + page_capacity]
@@ -329,10 +346,12 @@ class MathQuestionPDF(PDF):
 
     def _add_content_row_first(self, lines, max_lines_per_page=15, column=3, with_separators=False):
         """
-        写入正文内容到pdf文档
+        按“先行后列”方式写入多列正文到 PDF文档
         :param lines: 待写入的内容
         :param max_lines_per_page: 每页最多写入的行数，最大为15行，默认为15行
         :param column: 每页写入的列数，默认为3列
+        :param with_separators: 是否有使用分隔线，默认无分隔线
+        :param is_answer: 是否为答案页
         :return:
         """
 
@@ -343,6 +362,7 @@ class MathQuestionPDF(PDF):
             try:
                 if cur_lines % max_lines_per_page == 0:
                     self.add_page()
+                    self.page_footer_type[self.page_no()] = "question" if not self.is_answer else "answer"
                     if with_separators:
                         self.draw_column_separators(column)
                 for column_idx in range(column):
