@@ -472,10 +472,11 @@ class XuanWu:
 
         return deploy_info
 
-    def domain_sync_to_sim(self, domains_to_sync):
+    def domain_sync_to_sim(self, domains_to_sync, timeout=20):
         """
         领域同步
         :param domains_to_sync: 待同步到仿真的领域列表, 多个领域以‘,’分隔，如"Dev.oven,Steamer,BlockTemplate"
+        :param timeout: post请求超时设置
         :return:
         """
         if type(domains_to_sync) is str:
@@ -483,15 +484,45 @@ class XuanWu:
                 domains_to_sync = domains_to_sync.split(",")
             else:
                 domains_to_sync = [domains_to_sync]
-        sync_res = self._domain_sync_to_sim(domains=domains_to_sync)
+        sync_res = self._domain_sync_to_sim(domains=domains_to_sync, timeout=timeout)
         curr_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         sync_info = [f"同步到仿真（模板数据: 验收 --> 仿真）, time: {curr_time}", str(sync_res)]
 
         return sync_info
 
-    def export_additional_data_from_dev(self,):
+    def get_latest_additional_data_version(self,):
+        """
+        获取玄武开发环境中最新的新增数据版本信息
+        :return:
+        """
+        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/dataReleaseUat"
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Cookie": COOKIE_XUANWU_DEV,
+            "User-Agent": USER_AGENT
+        }
+
+        payload = "pageSize=10&pageNum=1&orderByColumn=createTime&isAsc=desc"
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        try:
+            obj_resp = json.loads(response.text)
+            rows = obj_resp.get("rows", [])
+            if len(rows) < 2:
+                print("没有获取到新增数据版本信息，无法进行后续操作")
+                return None
+            else:
+                latest_version_info = rows[1]
+                version = latest_version_info.get("version")
+                return version
+        except Exception as e:
+            print(e)
+        return None
+
+    def export_additional_data_from_dev(self, timeout=20):
         """
         从开发环境导出新增数据（sql文件）
+        :param timeout: post请求超时设置
         :return:
         """
         url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/exportUat"
@@ -506,9 +537,23 @@ class XuanWu:
         method = "POST"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
-        obj_resp = json.loads(response.text)
-        data_file = obj_resp.get("data")
+        data_file = None
+        for i in range(3):  # 重试3次
+            try:
+                response = requests.request(method, url, headers=headers, data=payload, timeout=timeout)
+                obj_resp = json.loads(response.text)
+                msg, code = obj_resp["msg"], obj_resp["code"]
+                if code == 500: # and msg == "导出数据为空"
+                    print("当前数据已经被导出，可以下载最新的发版文件了")
+                    latest_version = self.get_latest_additional_data_version()
+                    data_file = f"incrementData_ys_{latest_version}.sql"
+                    break
+                else:
+                    data_file = obj_resp.get("data")
+                    if data_file:
+                        break
+            except Exception as e:
+                print(e)
         if data_file:
             output_path = self._download_data_file_from_xuanwu(data_file)
             print(f"store file {data_file} into {output_path}")
@@ -557,7 +602,7 @@ class XuanWu:
 
         payload = f"id={release_id}&version={old_version}&newVersion={new_version}"
 
-        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=20)
 
         json_obj = json.loads(response.text)
         msg = json_obj.get("msg")
@@ -595,7 +640,12 @@ class XuanWu:
         :return: 返回本地文件路径，如果导出失败，返回None
         """
         # export data
-        version = self._export_base_data()
+        version = None
+        for i in range(3):  # 重试3次
+            version = self._export_base_data()
+            if version:
+                break
+
         if version is None:
             return None
 
@@ -1028,10 +1078,11 @@ class XuanWu:
         return slot_item
 
     @staticmethod
-    def _domain_sync_to_sim(domains):
+    def _domain_sync_to_sim(domains, timeout=20):
         """
         领域同步
         :param domains: 待同步的领域列表
+        :param timeout: post请求超时设置
         :return:
         """
         domains = ",".join(domains)
@@ -1047,7 +1098,7 @@ class XuanWu:
         method = "POST"
         payload = f"ids={domains}&env=k8ssim"
 
-        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
+        response = requests.request(method, url, headers=headers, data=payload, timeout=timeout)
 
         obj_resp = json.loads(response.text)
 
@@ -1316,30 +1367,6 @@ def main():
     print(res)
 
     return
-
-    xuanwu.get_intent_info(domain="Steamer", intent="increaseTemperature")
-    data_path = "/Users/zhanzq/Documents/work_haier/data/玄武数据.xlsx"
-
-    sheet_name = "slot_info"
-    json_lst = load_json_list_from_xlsx(xlsx_path=data_path, sheet_names=[sheet_name])[sheet_name]
-
-    category_lst = ["设备绑定", "留言板", "新闻", "菜谱", "日程闹钟", "闲聊", "找手机", "音乐电台", "股票查询", "限行",
-                    "翻译", "天气"]
-
-    life_skill_lst = []
-
-    for item in json_lst:
-        category_name = item.get("category_name")
-        status = item.get("status")
-        if category_name not in category_lst or status == "停用":
-            continue
-        else:
-            domain = item.get("domain_code")
-            intent = item.get("intent_code")
-            slot_info, tpl_info = xuanwu.get_intent_info(domain=domain, intent=intent)
-            item["slot_info"] = slot_info
-            item["tpl_info"] = tpl_info
-            life_skill_lst.append(item)
 
 
 if __name__ == "__main__":
