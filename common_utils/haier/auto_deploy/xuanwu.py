@@ -472,7 +472,7 @@ class XuanWu:
 
         return deploy_info
 
-    def domain_sync_to_sim(self, domains_to_sync, timeout=20):
+    def domain_sync_to_sim(self, domains_to_sync, timeout=50):
         """
         领域同步
         :param domains_to_sync: 待同步到仿真的领域列表, 多个领域以‘,’分隔，如"Dev.oven,Steamer,BlockTemplate"
@@ -586,6 +586,28 @@ class XuanWu:
 
         return release_info
 
+    @staticmethod
+    def _get_previous_release_version(curr_version):
+        """
+        获取上一个版本号，如1.2.0 --> 1.1.99 --> 1.1.98
+        :param curr_version:
+        :return:
+        """
+        # 版本号迭代顺序示例：1.1.98 --> 1.1.99 --> 1.2.0 --> 1.2.1
+        version_info = curr_version.split(".")
+        version_info = [int(it) for it in version_info]
+        assert len(version_info) == 3, "<UNK> id, version, newVersion <UNK>"
+        if version_info[2] == 0:
+            version_info[2] = 99
+            if version_info[1] == 0:
+                version_info[1] = 99
+                version_info[0] -= 1
+            else:
+                version_info[1] -= 1
+        else:
+            version_info[2] -= 1
+        return ".".join([str(it) for it in version_info])
+
     def _release_base_data(self, ):
         """
         发布基础数据，之后方可进行下载
@@ -608,14 +630,18 @@ class XuanWu:
         msg = json_obj.get("msg")
         if msg == "success":
             return old_version
+        elif msg == "当前版本无数据变动，无需封版":
+            print("当前版本无数据变动，无需封版")
+            # 直接下载 老版本数据
+            return "completed"
         else:
             print(json_obj)
             return None
 
     def _export_base_data(self, ):
         version = self._release_base_data()
-        if version is None:
-            return None
+        if version is None or version == "completed":
+            return version
         # export data
         file_name = f"baseData_sim_{version}.sql"
         url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/export"
@@ -648,6 +674,9 @@ class XuanWu:
 
         if version is None:
             return None
+        elif version == "completed":
+            print("无需进行【基础数据发布】")
+            return version
 
         # download data
         file_name = f"baseData_sim_{version}.sql"
@@ -1078,15 +1107,13 @@ class XuanWu:
         return slot_item
 
     @staticmethod
-    def _domain_sync_to_sim(domains, timeout=20):
+    def _domain_sync_to_sim(domains, timeout=50):
         """
         领域同步
         :param domains: 待同步的领域列表
         :param timeout: post请求超时设置
         :return:
         """
-        domains = ",".join(domains)
-        domains = quote(domains)
         url = "https://aitest.haiersmarthomes.com/xuanwu-admin/nlp/domain/domainSync"
 
         headers = {
@@ -1096,11 +1123,19 @@ class XuanWu:
             "x-requested-with": "XMLHttpRequest"
         }
         method = "POST"
-        payload = f"ids={domains}&env=k8ssim"
 
-        response = requests.request(method, url, headers=headers, data=payload, timeout=timeout)
+        sz = len(domains)
+        obj_resp = None
+        # 每次同步10个领域
+        for i in range(0, sz, 10):
+            sync_domains = ",".join(domains[i:i+10])
+            sync_domains = quote(sync_domains)
+            payload = f"ids={sync_domains}&env=k8ssim"
 
-        obj_resp = json.loads(response.text)
+            response = requests.request(method, url, headers=headers, data=payload, timeout=timeout)
+
+            obj_resp = json.loads(response.text)
+            print(obj_resp)
 
         return obj_resp
 
