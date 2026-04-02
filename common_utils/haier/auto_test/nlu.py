@@ -175,6 +175,7 @@ class NLU:
             "sn": json_resp.get("sn"),  # not None
             "nlpVersion": json_resp.get("nlpVersion"), # not None
             "isDialog": json_resp.get("isDialog"), # not None
+            "forwardPass": json_resp.get("forwardPass"),
             "errorCode": json_resp.get("errorCode"),
             "errorInfo": json_resp.get("errorInfo"),
             "category": json_resp.get("category", None),
@@ -183,6 +184,12 @@ class NLU:
             "slots": None,
             "response": json_resp.get("response")
         }
+        # 如何errorCode和errorInfo为null, 则删掉这两个字段
+        if not dm_info["errorCode"]:
+            dm_info.pop("errorCode")
+        if not dm_info["errorInfo"]:
+            dm_info.pop("errorInfo")
+
         if "results" in json_resp and len(json_resp["results"]) > 0:
             params = json_resp["results"][0].get("params", {})
             dm_info.update(self._parse_dm_response_params(params))
