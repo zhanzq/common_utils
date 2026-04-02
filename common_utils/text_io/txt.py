@@ -62,6 +62,9 @@ def load_from_jsonl(jsonl_path: str, encoding: str = 'utf8'):
     json_lst = []
     with open(jsonl_path, "r", encoding=encoding) as reader:
         for line in reader:
+            # 空行直接跳过
+            if not line.strip():
+                continue
             try:
                 json_obj = json.loads(line)
                 json_lst.append(json_obj)
