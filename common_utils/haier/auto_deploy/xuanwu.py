@@ -352,6 +352,7 @@ class XuanWu:
         slot_name = slot_info.get("slot_name")
         dict_code = slot_info.get("dict_code")
         intent_id = slot_info.get("intent_id")
+        modal_type = slot_info.get("modal_type", "AUXILIARY")   # 语气助词：AUXILIARY, 实体词：PRIMARY
         must = slot_info.get("must", "N")
         single = slot_info.get("single", "N")
         slot_item = {
@@ -360,6 +361,7 @@ class XuanWu:
             'dnitId': intent_id,
             'slotCode': slot_code,
             'slotName': slot_name,
+            "modalType": modal_type,
             "must": must,
             "single": single
         }
@@ -724,13 +726,15 @@ class XuanWu:
             msg = json_obj.get("msg")
             if msg == "success":
                 print("import data into test finished!")
+                return json_obj
             else:
-                print(json_obj)
+                print("import data into test failed!")
+                return json_obj
         except Exception as e:
             print(e)
 
         reader.close()
-        return
+        return {"msg": "未知错误", "code": -1}
 
     @staticmethod
     def import_base_data_into_sim(data_path):
