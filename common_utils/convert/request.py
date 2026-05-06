@@ -14,7 +14,8 @@ BROWSER_BLACKLIST_HEADERS = {
     "content-length",
     "connection",
     "origin",
-    "referer",
+    "priority",
+    # "referer",  # 不能过滤
     "sec-fetch-site",
     "sec-fetch-mode",
     "sec-fetch-dest",
@@ -103,12 +104,14 @@ def _parse_curl(curl_code: str):
         params = dict(parse_qsl(parsed.query))
         url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
 
+    headers.pop("User-Agent", None)
+    headers.pop("user-agent", None)  # 大写和小写同时过滤
     return method, url, headers, data, params
 
 
 def _detect_json(data: str):
     if not data:
-        return None, False
+        return None, True
     try:
         return json.loads(data), True
     except Exception:
@@ -135,6 +138,8 @@ def _dict_to_code(name: str, value: dict, base_indent: int = 4) -> str:
 
     dumped = json.dumps(value, indent=4, ensure_ascii=False)
     lines = dumped.splitlines()
+    if name == "headers":
+        lines.insert(1, f'    "User-Agent": USER_AGENT,')  # 默认添加 User-Agent
 
     # 第一行：headers = {
     code_lines = [f"{indent}{name} = {lines[0]}"]
@@ -168,6 +173,7 @@ def convert_curl_to_python_request(curl_code: str) -> str:
 
     code = f'''import requests
 import json
+from common_utils.const.web import USER_AGENT
 
 
 def do_request():
