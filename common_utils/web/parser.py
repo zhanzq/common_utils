@@ -7,7 +7,6 @@ import os
 import json
 import requests
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup as BS
 from bs4.element import NavigableString
 from common_utils.utils import format_string
 from common_utils.const.web import USER_AGENT
@@ -15,17 +14,29 @@ import chardet
 
 
 class WEB:
-    def __init__(self, url, proxies=None):
+    def __init__(self, url, refer=None, proxies=None):
         self.url = url
         self.headers = {"user-agent": USER_AGENT}
+        if refer:
+            self.headers["Referer"] = refer
         self.proxies = proxies
-        self.html = self.download_web()
-        self.bs = BS(self.html, features="html.parser")
+        # self.html = self.download_web()
+        # self.bs = BS(self.html, features="html.parser")
 
-    def download_file(self, output_dir):
+    def download_file(self, output_dir, file_name=None):
+        """
+        下载文件
+        :param output_dir:
+        :param file_name:
+        :return:
+        """
         os.makedirs(output_dir, exist_ok=True)
         resp = requests.request("get", url=self.url, headers=self.headers, proxies=self.proxies)
-        file_name = self.url.split("/")[-1]
+        if not file_name:
+            file_name = self.url.split("/")[-1]
+        else:
+            # 使用解析出来的后缀名
+            file_name = file_name.split(".")[0] + "." + self.url.split(".")[-1]
         output_path = os.path.join(output_dir, file_name)
         sz = len(resp.content)
         with open(output_path, "wb") as writer:
