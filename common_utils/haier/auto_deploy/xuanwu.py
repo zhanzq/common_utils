@@ -474,7 +474,7 @@ class XuanWu:
 
         return deploy_info
 
-    def domain_sync_to_sim(self, domains_to_sync, timeout=50):
+    def domain_sync_to_sim(self, domains_to_sync, timeout=100):
         """
         领域同步
         :param domains_to_sync: 待同步到仿真的领域列表, 多个领域以‘,’分隔，如"Dev.oven,Steamer,BlockTemplate"
@@ -1111,7 +1111,7 @@ class XuanWu:
         return slot_item
 
     @staticmethod
-    def _domain_sync_to_sim(domains, timeout=50):
+    def _domain_sync_to_sim(domains, timeout=100):
         """
         领域同步
         :param domains: 待同步的领域列表
