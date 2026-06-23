@@ -269,6 +269,26 @@ class MathQuestionPDF(PDF):
             self._set_draw_color("blue")
             self.line(x, y1, x, y2)
 
+    @staticmethod
+    def _process_answers(lines):
+        """
+        处理答案，如果答案页，则每页最多16行，最多10列
+        :param lines: 答案内容类型应该为list[list[str]]
+        :return:
+        """
+        answers = []
+        for idx, page_answers in enumerate(lines):
+            page_answers = [str(it) for it in page_answers]
+            answers.append(f"第{idx + 1:2d}页")
+            # 每15行添加表头，不满15行，补空行
+            for i in range(0, len(page_answers), 15):
+                answers.extend(page_answers[i:i + 15])
+                answers.extend([""] * (15 - len(page_answers[i:i + 15])))
+                answers.append("")
+            answers.pop(-1)
+
+        return answers
+
     def add_content(self, lines, max_lines_per_page=15, column=3, column_first=True, with_separators=False, is_answer=False):
         """
         写入正文内容到pdf文档
@@ -277,10 +297,16 @@ class MathQuestionPDF(PDF):
         :param column:
         :param column_first:
         :param with_separators: 是否有使用分隔线，默认无分隔线
-        :param is_answer: 是否为答案页
+        :param is_answer: 是否为答案页，如果为答案页，max_lines_per_page最大为16，column最大为10
         :return:
         """
         self.is_answer = is_answer
+        if is_answer:
+            assert type(lines) == list and (type(lines[0]) == list or type(lines[0]) == tuple), "answers must be a list of lists"
+            lines = self._process_answers(lines)
+            max_lines_per_page=16
+            column = min(column, 10)
+
         if column_first:
             self._add_content_column_first(lines, max_lines_per_page=max_lines_per_page, column=column, with_separators=with_separators)
         else:
