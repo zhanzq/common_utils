@@ -29,7 +29,7 @@ class NLU:
         if simulation_device_path:
             self.simulation_device_path = simulation_device_path
         if self.simulation_device_path is None:
-            self.simulation_device_path = "/Users/zhanzq/Downloads/haier_data/simulation_devices.json"
+            self.simulation_device_path = "/Users/zhanzq/Documents/haier_data/simulation_devices.json"
 
         devices = load_from_json(json_path=self.simulation_device_path)
         lst = [f"{it['id']}|{it['nickname']}|{it['type']}|{it['floor']}|{it['room']}|{it['state']}" for it in devices]
@@ -184,11 +184,17 @@ class NLU:
             "slots": None,
             "response": json_resp.get("response")
         }
-        # 如何errorCode和errorInfo为null, 则删掉这两个字段
+        # 如果errorCode和errorInfo为null, 则删掉这两个字段
         if not dm_info["errorCode"]:
             dm_info.pop("errorCode")
         if not dm_info["errorInfo"]:
             dm_info.pop("errorInfo")
+
+        # 如果isDialog和forwardPass为False，则删掉这两个字段
+        if not dm_info["isDialog"]:
+            dm_info.pop("isDialog")
+        if not dm_info["forwardPass"]:
+            dm_info.pop("forwardPass")
 
         if "results" in json_resp and len(json_resp["results"]) > 0:
             params = json_resp["results"][0].get("params", {})
@@ -232,18 +238,31 @@ class NLU:
 
     @staticmethod
     def _parse_dm_response_params(params):
+        """
+        解析dm服务返回的params字段
+        :param params: dict, dm服务返回的params字段
+        :return: dict, keys包括domain, intent, slots
+        """
         out_item = {
             "domain": None,
             "intent": None,
-            "slots": None
+            "slots": {}
         }
+        # 删除为空的字段
+        params = {k: v for k, v in params.items() if v}
+        # 删除无用的字段
+        params.pop("errorCode", None)
+        params.pop("errorInfo", None)
+        params.pop("internalDomain", None)
+        params.pop("cloudDomain", None)
+
+        out_item["domain"] = params.pop("domain", None)
+        out_item["intent"] = params.pop("action", None)
+
         if params:
-            params.pop("errorCode", None)
-            params.pop("errorInfo", None)
-            params.pop("internalDomain", None)
-            out_item["domain"] = params.pop("domain", None)
-            out_item["intent"] = params.pop("action", None)
-            out_item["slots"] = params
+            out_item["slots"].update(params)
+        else:
+            out_item.pop("slots", None)
 
         return out_item
 
