@@ -5,6 +5,12 @@
 2. 更新模块`common_utils.haier.auto_test.parse_log`
    + 新增`bug_reproduce`bug复现功能
    + 新增`get_simple_request_body`获取请求体功能
+3. 更新模块`common_utils.web.parser`
+   + 声明WEB变量时，可指定referer头
+   + `download_file`功能下载文件时，支持指定文件名
+4. 更新`common_utils.pdf.create_pdf`模块
+   + `add_content`功能支持`is_answer`参数，用于指定是否为答案，方便生成题解
+
 
 
 
