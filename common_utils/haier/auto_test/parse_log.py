@@ -46,6 +46,91 @@ class LogParser:
 
         return self._log_id_map
 
+    @staticmethod
+    def _remove_empty_fields(data):
+        """
+        移除字典中为空的字段（空字符串或None）
+        :param data: 待处理的字典
+        :return: 移除空字段后的字典
+        """
+        if not isinstance(data, dict):
+            return data
+        return {
+            key: value
+            for key, value in data.items()
+            if value != "" and value is not None
+        }
+
+    def _post_process_bug_reproduce_response(self, resp_json):
+        """
+        对bug复现的响应结果进行后处理，移除不必要的字段和空值字段
+        :param resp_json: 响应的JSON字典
+        :return: 处理后的JSON字典
+        """
+        # 处理不需要显示的字段
+        unnecessary_fields = [
+            "time_cost", "multiIntentAnswered", "moreDevice", "retData", "centralControlInput",
+            "multiDialogState", "parseStatus", "isMultiDialogue", "isContinuousDialogue", "retStatus",
+            "multiIntent", "playtts", "quitContinuousDialogue", "needParseAgain"
+        ]
+        for key in unnecessary_fields:
+            resp_json.pop(key, None)
+
+        # 安全获取 results[0]
+        results = resp_json.get("results") or []
+        if not results:
+            return resp_json
+
+        result = results[0]
+
+        # 处理 dev 信息，移除空值字段
+        result["dev"] = self._remove_empty_fields(result.get("dev") or {})
+
+        result.pop("nlpParams", None)
+
+        # 处理 params 信息，移除空值字段
+        result["params"] = self._remove_empty_fields(result.get("params") or {})
+
+        # 去除顶层为空的字段
+        resp_json = self._remove_empty_fields(resp_json)
+
+        return resp_json
+
+    def bug_reproduce(self):
+        """
+        bug重现
+        :return:
+        """
+        # 如果sn没有设置，直接返回null
+        if not self._sn:
+            return None
+
+        # 获取请求体
+        request_body = self.get_request_body()
+        payload = self.get_simple_request_body(request_body)
+        headers = {
+            "Content-Type": "application/json",
+            "auth": "access_nlp_12345678"
+        }
+
+        url = {
+            "service": "https://aiservice.haier.net/dialog-system/v2/dialog",
+            "sim": "https://aisim.haiersmarthomes.com/dialog-system/v2/dialog",
+            "test": "https://aitest.haiersmarthomes.com/dialog-system/v2/dialog"
+        }[self._env]
+
+        try:
+            response = requests.request("POST", url, headers=headers, data=payload, timeout=10)
+            response.raise_for_status()  # 检查 HTTP 状态码
+            resp_json = response.json()
+        except requests.RequestException as e:
+            return json.dumps({"error": f"request failed: {str(e)}"}, ensure_ascii=False)
+        except json.JSONDecodeError:
+            return json.dumps({"error": "invalid json response"}, ensure_ascii=False)
+
+        resp_json = self._post_process_bug_reproduce_response(resp_json)
+        return json.dumps(resp_json, indent=4, ensure_ascii=False)
+
     def get_simulation_device_lst(self):
         req_body = self.get_request_body()
         device_lst = req_body.get("otherParams").get("simulationDevices")
@@ -389,6 +474,45 @@ class LogParser:
 
         return query, resp, action_time
 
+    def get_simple_request_body(self,):
+        necessary_slots = ["deviceType", "appVersion", "masterDeviceId", "otherParams-simulation",
+                           "otherParams-simulationDevices", "otherParams-llm2", "userInput", "userId"]
+        simple_request = {}
+        request_body = self.get_request_body()
+        for key in necessary_slots:
+            if "-" not in key:
+                if key in request_body:
+                    simple_request[key] = request_body.get(key)
+            else:
+                slot_path = key.split("-")
+                assert len(slot_path) == 2, "params too deep"
+                a, b = slot_path
+                if a in request_body and b in request_body[a]:
+                    if a not in simple_request:
+                        simple_request[a] = {}
+                    simple_request[a][b] = request_body[a][b]
+
+        master_device_info, device_info, device_lst = self.get_device_lst(verbose=False)
+        simulation_devices = self.construct_simulation_devices_info(device_lst)
+
+        if simulation_devices:
+            simple_request["otherParams"]["simulationDevices"] = simulation_devices
+
+        return json.dumps(simple_request, ensure_ascii=False, indent=4)
+
+    @staticmethod
+    def construct_simulation_devices_info(device_lst):
+        if type(device_lst) is dict:
+            device_lst = [device_lst]
+        simulation_devices = []
+        for device in device_lst:
+            info = "|".join(
+                [device.get("deviceId"), device.get("deviceName"), device.get("deviceType"), device.get("floor"),
+                 device.get("room")])
+            simulation_devices.append(info)
+
+        return "#".join(simulation_devices)
+
     def get_request_body(self):
         service_name = "dialog-system:doNlpAnalysis"
         resp_obj = self.get_service_info(service_name=service_name)
@@ -625,6 +749,8 @@ class LogParser:
             if intent.startswith("Block"):
                 if not remove_nlu and domain.startswith("BlockNLU"):
                     pass
+                elif domain.startswith("BlockCCG"):
+                    pass
                 else:
                     block_domain.add(intent[5:])
 
@@ -731,7 +857,8 @@ class LogParser:
 
         simple_semantics = self.rm_block_semantics(simple_semantics, remove_nlu=False)
         simple_semantics = self.rm_extract_domain(simple_semantics)
-        simple_semantics = self.rm_internal_command(simple_semantics)
+        # 不能过滤internal command语义信息
+        # simple_semantics = self.rm_internal_command(simple_semantics)
         if simple_semantics:
             print_info = json.dumps(simple_semantics, indent=4, ensure_ascii=False)
             if verbose:
@@ -936,12 +1063,32 @@ class LogParser:
             "masterDeviceId": request_data.get("masterDeviceId"),
             "entryDeviceType": data.get("entryDeviceType"),
             "isDialog": data.get("isDialog"),
+            "forwardPass": data.get("forwardPass"),
             "middleSn": data.get("middleSn"),
+            "sn": data.get("sn"),
             "nlp_response": data.get("response"),
             "centralControlInput": data.get("centralControlInput"),
             "centralControlOutput": data.get("centralControlOutput"),
             "results": data.get("results")
         }
+
+        # middleSn为空时，删除middleSn字段
+        if not nlp_analysis_info.get("middleSn"):
+            nlp_analysis_info.pop("middleSn")
+
+        params = nlp_analysis_info.get("results")[0].get("params")
+        # 删除params字段值为None的字段
+        if params:
+            params = {k: v for k, v in params.items() if v}
+            nlp_analysis_info["results"][0]["params"] = params
+
+        # 删除results[0]["dev"]中为空的字段
+        dev = nlp_analysis_info.get("results")[0].get("dev")
+        if dev:
+            dev = {k: v for k, v in dev.items() if v}
+            nlp_analysis_info["results"][0]["dev"] = dev
+
+        nlp_analysis_info["results"][0].pop("nlpParams")
 
         print_info = json.dumps(nlp_analysis_info, indent=4, ensure_ascii=False)
         if verbose:

@@ -1,4 +1,13 @@
 # 常用工具包
+## version 1.4.8
+### updates
+1. 新增bug修复模块`common_utils.haier.bug_fix`
+2. 更新模块`common_utils.haier.auto_test.parse_log`
+   + 新增`bug_reproduce`bug复现功能
+   + 新增`get_simple_request_body`获取请求体功能
+
+
+
 ## version 1.4.7
 ### updates
 1. 设置requests.request请求的timeout=5
