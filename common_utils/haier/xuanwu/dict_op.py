@@ -138,9 +138,13 @@ def edit_xuanwu_dict(dict_code, word, synonym, overwrite=False):
     new_synonym = word_dict[word]["synonym"]
     old_lst = [] if not new_synonym else new_synonym.split(",")
     if type(synonym) is str:
-        # 支持分隔符：/,，;；|和\
-        lst = re.split(pattern="/|,|，|;|；|\\||\\\\", string=synonym)
-        lst = [it.strip() for it in lst]
+        if "(" in synonym or ")" in synonym or "?" in synonym:
+            # 假设为正则表达式
+            lst = [synonym]
+        else:
+            # 支持分隔符：/,，;；|和\
+            lst = re.split(pattern="/|,|，|;|；|\\||\\\\", string=synonym)
+            lst = [it.strip() for it in lst]
     else:
         lst = synonym
 
