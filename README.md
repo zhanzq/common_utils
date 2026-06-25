@@ -10,8 +10,15 @@
    + `download_file`功能下载文件时，支持指定文件名
 4. 更新`common_utils.pdf.create_pdf`模块
    + `add_content`功能支持`is_answer`参数，用于指定是否为答案，方便生成题解
-
-
+5. 更新模块`common_utils.haier.auto_test.parse_log`
+   + 引入`requests.Session`复用HTTP连接，提升请求性能
+   + 设置`session.trust_env = False`，禁用系统代理自动读取，避免代理导致的超时问题
+   + 将4处`requests.request`调用统一替换为`self._session.request`
+6. 更新模块`common_utils.haier.auto_test.nlu`
+   + 引入`requests.Session`复用HTTP连接
+   + 设置`session.trust_env = False`，禁用系统代理自动读取
+   + 将3处`requests.request`调用统一替换为`self._session.request`
+   + `get_nlu_service_response`和`get_tpl_service_response`由`@staticmethod`调整为实例方法，以复用Session
 
 
 ## version 1.4.7

@@ -19,6 +19,8 @@ class NLU:
         """
         self.simulation_device_path = simulation_device_path
         self.simulation_devices = self.load_simulation_devices()
+        self._session = requests.Session()
+        self._session.trust_env = False
 
     def load_simulation_devices(self, simulation_device_path=None):
         """
@@ -37,8 +39,7 @@ class NLU:
 
         return sim_devices
 
-    @staticmethod
-    def get_nlu_service_response(query, env="local", device="X20"):
+    def get_nlu_service_response(self, query, env="local", device="X20"):
         """
         在特定环境中获取nlu的执行结果
         :param query: 输入语句
@@ -89,7 +90,7 @@ class NLU:
             "auth": "access_nlp_12345678",
         }
 
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = self._session.request("POST", url, headers=headers, data=payload)
 
         return json.loads(response.text)
 
@@ -158,7 +159,7 @@ class NLU:
             "auth": "access_nlp_12345678",
         }
 
-        response = requests.request("POST", url, headers=headers, data=payload)
+        response = self._session.request("POST", url, headers=headers, data=payload)
 
         json_resp = json.loads(response.text)
 
@@ -202,8 +203,7 @@ class NLU:
 
         return dm_info
 
-    @staticmethod
-    def get_tpl_service_response(query):
+    def get_tpl_service_response(self, query):
         """
            在特定环境中获取template引擎的执行结果,目前只支持**开发环境**, <==> env = "dev", 且使用时需开启sico VPN
            :param query: 输入语句
@@ -226,7 +226,7 @@ class NLU:
             'Content-Type': 'application/json'
         }
 
-        response = requests.request("POST", url, headers=headers, data=payload, timeout=2)
+        response = self._session.request("POST", url, headers=headers, data=payload, timeout=2)
 
         json_resp = json.loads(response.text)
 

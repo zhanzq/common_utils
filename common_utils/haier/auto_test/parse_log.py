@@ -29,6 +29,8 @@ class LogParser:
         self._sn = sn
         self._env = env
         self._log_id_map = {}
+        self._session = requests.Session()
+        self._session.trust_env = False
 
     def update_config(self, **kwargs):
         if "sn" in kwargs:
@@ -120,7 +122,7 @@ class LogParser:
         }[self._env]
 
         try:
-            response = requests.request("POST", url, headers=headers, data=payload, timeout=10)
+            response = self._session.request("POST", url, headers=headers, data=payload, timeout=10)
             response.raise_for_status()  # 检查 HTTP 状态码
             resp_json = response.json()
         except requests.RequestException as e:
@@ -407,7 +409,7 @@ class LogParser:
 
         for _ in range(3):
             try:
-                response = requests.request("GET", url, headers=headers, data=payload, timeout=5)
+                response = self._session.request("GET", url, headers=headers, data=payload, timeout=5)
                 log_id_ret = json.loads(response.text)
                 log_id_map = self._parse_log_id(log_id_ret)
                 if log_id_map and is_last_req:
@@ -608,7 +610,7 @@ class LogParser:
             "user-agent": USER_AGENT
         }
 
-        response = requests.request("GET", url, headers=headers, data=payload, timeout=5)
+        response = self._session.request("GET", url, headers=headers, data=payload, timeout=5)
 
         service_info = json.loads(response.text)
         if not service_info.get("data") or  not service_info["data"].get("reqBody"):
@@ -992,7 +994,7 @@ class LogParser:
         method = "GET"
         payload = ""
 
-        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
+        response = self._session.request(method, url, headers=headers, data=payload, timeout=5)
         obj_resp = json.loads(response.text)
 
         data = obj_resp.get("data")
