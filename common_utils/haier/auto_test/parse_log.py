@@ -108,8 +108,7 @@ class LogParser:
             return None
 
         # 获取请求体
-        request_body = self.get_request_body()
-        payload = self.get_simple_request_body(request_body)
+        payload = self.get_simple_request_body()
         headers = {
             "Content-Type": "application/json",
             "auth": "access_nlp_12345678"
@@ -477,7 +476,7 @@ class LogParser:
         return query, resp, action_time
 
     def get_simple_request_body(self,):
-        necessary_slots = ["deviceType", "appVersion", "masterDeviceId", "otherParams-simulation",
+        necessary_slots = ["deviceType", "appVersion", "controlledDeviceId", "masterDeviceId", "otherParams-simulation",
                            "otherParams-simulationDevices", "otherParams-llm2", "userInput", "userId"]
         simple_request = {}
         request_body = self.get_request_body()
@@ -1097,6 +1096,90 @@ class LogParser:
             print(print_info)
 
         return nlp_analysis_info
+
+    @staticmethod
+    def _parse_time_cost_str(item):
+        """
+        解析time_cost中的单条耗时字符串
+        :param item: 字符串如 "total: 563"
+        :return: (key, value) 元组，解析失败返回 (item, None)
+        """
+        parts = item.split(":", 1)
+        if len(parts) == 2:
+            try:
+                value = int(parts[1].strip())
+            except ValueError:
+                value = parts[1].strip()
+            return parts[0].strip(), value
+        return item, None
+
+    # 允许保留的顶级耗时字段
+    _ALLOWED_OVERVIEW_FIELDS = {"total", "preProcess", "nlu", "processNlu", "dm"}
+    # 允许保留的nlu_detail字段
+    _ALLOWED_NLU_DETAIL_FIELDS = {
+        "nluModel", "modelPost", "fetchNlu", "sentenceProcess", "nluTpl", "nluBigMedia"
+    }
+
+    def get_time_cost_from_log(self, verbose=False, full_mode=False):
+        """
+        获取dialog-system:doNlpAnalysis服务中的耗时数据
+        :param verbose: 是否打印详细信息, 默认不打印
+        :param full_mode: 是否输出全部耗时信息（不过滤字段，仅过滤-1和0），默认False只输出关键字段
+        :return: 解析后的耗时字典，各字段按耗时由大到小排序
+        """
+        service_name = "dialog-system:doNlpAnalysis"
+        if service_name not in self.get_log_id_map():
+            return "ERROR doNlpAnalysis"
+        service_info = self.get_service_info(service_name)
+        query, resp, action_time = self._parse_service_info(service_info)
+
+        data = resp.get("data")
+        if not data:
+            return None
+
+        time_cost = data.get("time_cost")
+        if not time_cost:
+            return None
+
+        result = {}
+        all_fields = {}
+        detail_lst = time_cost.get("detail", [])
+
+        for item in detail_lst:
+            if isinstance(item, str):
+                key, value = self._parse_time_cost_str(item)
+                # 过滤耗时为-1或0的字段
+                if isinstance(value, int) and value > 0:
+                    if full_mode:
+                        all_fields[key] = value
+                    elif key in self._ALLOWED_OVERVIEW_FIELDS:
+                        if "processNlu" == key:
+                            key += "-llm"
+                        all_fields[key] = value
+            elif isinstance(item, dict):
+                for group_name, group_items in item.items():
+                    if not isinstance(group_items, list):
+                        continue
+                    for sub_item in group_items:
+                        if isinstance(sub_item, str):
+                            key, value = self._parse_time_cost_str(sub_item)
+                            if isinstance(value, int) and value > 0:
+                                if full_mode:
+                                    # full_mode下所有分组字段都加上前缀，避免重名
+                                    prefix = f"{group_name}-"
+                                    all_fields[f"{prefix}{key}"] = value
+                                elif group_name == "nlu_detail" and key in self._ALLOWED_NLU_DETAIL_FIELDS:
+                                    all_fields[f"nlu-{key}"] = value
+
+        # 所有字段按耗时由大到小排序
+        if all_fields:
+            result = dict(sorted(all_fields.items(), key=lambda x: x[1], reverse=True))
+
+        if verbose:
+            print_info = json.dumps(result, indent=4, ensure_ascii=False)
+            print(print_info)
+
+        return result
 
 
 def main():
