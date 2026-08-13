@@ -580,7 +580,7 @@ class XuanWu:
 
     def _get_base_data_release_info(self,):
         html = self._get_release_html()
-        bs = BS(html)
+        bs = BS(html, features="html.parser")
         items = bs.find_all("input")
         assert len(items) == 3, "基础数据发布需要 id, version, newVersion 三项内容"
 
@@ -613,12 +613,14 @@ class XuanWu:
     def _release_base_data(self, ):
         """
         发布基础数据，之后方可进行下载
-        :return: version, 如果数据为空，返回None
+        :return: version, 如果数据为空，返回None or "completed"
         """
         release_info = self._get_base_data_release_info()
         url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/add"
         headers = {
             "Cookie": COOKIE_XUANWU_DEV,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest",
             "User-Agent": USER_AGENT
         }
         method = "POST"
@@ -630,7 +632,7 @@ class XuanWu:
 
         json_obj = json.loads(response.text)
         msg = json_obj.get("msg")
-        if msg == "success":
+        if msg == "success" or msg == "操作成功":
             return old_version
         elif msg == "当前版本无数据变动，无需封版":
             print("当前版本无数据变动，无需封版")
@@ -640,37 +642,15 @@ class XuanWu:
             print(json_obj)
             return None
 
-    def _export_base_data(self, ):
-        version = self._release_base_data()
-        if version is None or version == "completed":
-            return version
-        # export data
-        file_name = f"baseData_sim_{version}.sql"
-        url = "https://aidev.haiersmarthomes.com/xuanwu-admin/ver/dataRelease/export"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Cookie": COOKIE_XUANWU_DEV,
-            "User-Agent": USER_AGENT,
-            "X-Requested-With": "XMLHttpRequest",
-        }
-        method = "POST"
-        payload = f"version={version}"
-
-        response = requests.request(method, url, headers=headers, data=payload, timeout=5)
-        json_obj = json.loads(response.content)
-        print(json_obj)
-
-        return version
-
     def export_base_data_from_dev(self, ):
         """
         从玄武开发环境中导出基础数据到本地
-        :return: 返回本地文件路径，如果导出失败，返回None
+        :return: 返回本地文件路径，如果导出失败，返回None 或者 "completed"
         """
         # export data
         version = None
         for i in range(3):  # 重试3次
-            version = self._export_base_data()
+            version = self._release_base_data()
             if version:
                 break
 
@@ -680,12 +660,17 @@ class XuanWu:
             print("无需进行【基础数据发布】")
             return version
 
+        return self.download_basedata_from_dev(version)
+
+    @staticmethod
+    def download_basedata_from_dev(version):
         # download data
         file_name = f"baseData_sim_{version}.sql"
         base_url = "https://aidev.haiersmarthomes.com/xuanwu-admin/common/download?"
         url = base_url + f"fileName={file_name}&delete=true"
         headers = {
             "Cookie": COOKIE_XUANWU_DEV,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "User-Agent": USER_AGENT
         }
         method = "GET"
@@ -1398,12 +1383,10 @@ from common_utils.text_io.excel import load_json_list_from_xlsx
 
 def main():
     xuanwu = XuanWu()
-    domain = "Steamer"
-    intent = "statusEnquiry"
-    tpl = "{<room>}?的?{<deviceName>}(做|工作)(好|完)了吗"
-
-    res = xuanwu.insert_template(domain=domain, intent=intent, template=tpl, slot_value_dct={"property": "lefttime"})
-    print(res)
+    base_data_path = xuanwu.export_base_data_from_dev()
+    if base_data_path is None or base_data_path == "completed":
+        return
+    xuanwu.import_base_data_into_sim(data_path=base_data_path)
 
     return
 
