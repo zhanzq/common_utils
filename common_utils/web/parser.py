@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from bs4.element import NavigableString
 from common_utils.utils import format_string
 from common_utils.const.web import USER_AGENT
+from bs4 import BeautifulSoup as BS
 import chardet
 
 
@@ -20,8 +21,13 @@ class WEB:
         if refer:
             self.headers["Referer"] = refer
         self.proxies = proxies
-        # self.html = self.download_web()
-        # self.bs = BS(self.html, features="html.parser")
+        # 如果后缀为一个文件，如.mp3，则不执行download_web
+        if "." not in url.split("/")[-1]:
+            self.html = self.download_web()
+            self.bs = BS(self.html, features="html.parser")
+        else:
+            self.html = None
+            self.bs = None
 
     def download_file(self, output_dir, file_name=None):
         """
