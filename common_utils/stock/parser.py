@@ -30,7 +30,9 @@ class StockParser:
         for code_or_name in  stock_code_or_name.split(","):
             stock_code = self.stock_name_to_code.get(code_or_name, code_or_name)
             if len(stock_code) == 6:
-                stock_code = "sh" + stock_code  # 默认为上证
+                stock_code = self.get_exchange(stock_code) + stock_code  # 默认为上证
+            elif len(stock_code) == 5:
+                stock_code = "hk" + stock_code
             stock_code_list.append(stock_code)
 
         url = f"https://hq.sinajs.cn/list={','.join(stock_code_list)}"
@@ -76,6 +78,26 @@ class StockParser:
         }
 
         return info
+
+    @staticmethod
+    def get_exchange(stock_code: str) -> str:
+        """
+        根据A股股票代码判断交易所
+
+        返回：
+            SH - 上海证券交易所
+            SZ - 深圳证券交易所
+            UNKNOWN - 无法判断
+        """
+        code = str(stock_code).strip()
+
+        if code.startswith(("600", "601", "603", "605", "688", "689")):
+            return "sh"
+
+        if code.startswith(("000", "001", "002", "003", "300", "301")):
+            return "sz"
+
+        return "sh"
 
     @staticmethod
     def parse_hk_stock_info(stock_info):
@@ -141,7 +163,7 @@ class StockParser:
 def main():
     stock_parser = StockParser()
 
-    stock_info = stock_parser.get_stock_info(stock_code_or_name="快手")
+    stock_info = stock_parser.get_stock_info(stock_code_or_name="513050")
     print(stock_info)
     stock_info = stock_parser.parse_stock_info(stock_info)
     stock_parser.print_stock_info(stock_info)
