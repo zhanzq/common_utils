@@ -12,6 +12,12 @@ import re
 class PDF:
     def __init__(self, pdf_path):
         self.output_path = pdf_path
+        self.ignore_files = [".DS_Store"]
+
+    def add_ignore_files(self, ignore_files):
+        if type(ignore_files) is str:
+            ignore_files = [ignore_files]
+        self.ignore_files.extend(ignore_files)
 
     def merge_pdf(self, input_dir):
         """
@@ -45,6 +51,8 @@ class PDF:
         # 创建 PDF 文件写入器
         image_lst = []
         for img_file in jpg_files:
+            if img_file in self.ignore_files:
+                continue
             # 打开图片文件
             jpg_path = os.path.join(input_dir, img_file)
             image = Image.open(jpg_path)
